@@ -1,7 +1,9 @@
 import { Edge, TransitiveClosure, INF, add } from "./interfaces";
 import { getNodesFromEdges } from "./utils";
 
-export function buildDAGTransitiveClosure<T>(edges: Edge<T>[]): TransitiveClosure<T>[] {
+export function buildDAGTransitiveClosure<T>(
+  edges: Edge<T>[]
+): TransitiveClosure<T>[] {
   const nodes = getNodesFromEdges(edges);
   const N = nodes.length;
   if (N > INF / 2) {

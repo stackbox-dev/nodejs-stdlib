@@ -65,7 +65,7 @@ export function firstFitDecreasing<T>(capacity: Size, items: Item<T>[]) {
     if (!fit && capacity.canContain(item.size)) {
       bins.push({
         items: [item],
-        used: item.size
+        used: item.size,
       });
     }
   }
