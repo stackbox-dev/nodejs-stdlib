@@ -1,5 +1,3 @@
-import { Readable } from "stream";
-
 export type CompareFn<T> = (a: T, b: T) => number;
 
 export type KeyFn<T> = (a: T) => number | string;
@@ -180,11 +178,13 @@ export function selectRandom<T>(array: T[]) {
   return array[Math.min(index, array.length - 1)];
 }
 
-export function streamToBuffer(stream: Readable): Promise<Buffer> {
+export function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
   const chunks: Buffer[] = [];
   return new Promise<Buffer>((resolve, reject) => {
     stream.on("data", (chunk) => chunks.push(chunk));
     stream.on("error", (err) => reject(err));
-    stream.on("end", () => resolve(Buffer.concat(chunks)));
+    stream.on("end", () =>
+      resolve(chunks.length === 1 ? chunks[0] : Buffer.concat(chunks))
+    );
   });
 }
