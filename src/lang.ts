@@ -179,8 +179,8 @@ export function selectRandom<T>(array: T[]) {
 }
 
 export function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
-  const chunks: Buffer[] = [];
   return new Promise<Buffer>((resolve, reject) => {
+    const chunks: Buffer[] = [];
     stream.on("data", (chunk) => chunks.push(chunk));
     stream.on("error", (err) => reject(err));
     stream.on("end", () =>
