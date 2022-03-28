@@ -1,6 +1,6 @@
 {
   "name": "@stackbox/stdlib",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Standard Utility",
   "main": "dist/index.js",
   "repository": {
