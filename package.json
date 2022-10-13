@@ -1,30 +1,27 @@
 {
-  "name": "@stackbox/stdlib",
-  "version": "1.1.0",
-  "description": "Standard Utility",
+  "name": "@stackbox-dev/stdlib",
+  "version": "2.0.0",
+  "description": "Node.js Standary Utility Functions",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
     "url": "git@gitlab.com:stackbox-group/nodejs-libs/stdlib.git"
   },
   "scripts": {
+    "prepare": "husky install",
     "pretty": "prettier --loglevel warn --write \"./src/**/*.{js,ts,json}\"",
     "pretty-quick": "pretty-quick --staged --pattern \"./src/**/*.{js,ts,json}\"",
     "clean": "rimraf dist",
-    "pretest": "run-s pretty-quick",
-    "test": "jest -i",
-    "prebuild": "run-s pretty clean",
-    "build": "tsc",
-    "precommit": "run-s pretty-quick",
-    "postcommit": "git update-index -g",
-    "prepublishOnly": "npm run build",
-    "artifactregistry-login": "npx google-artifactregistry-auth --repo-config=.npmrc"
+    "test": "jest",
+    "build": "run-s clean tsc",
+    "prepublishOnly": "npm run build"
   },
-  "author": "Sabyasachi Bhattacharjee <saby@stackbox.xyz>",
+  "author": "Stackbox <dev@stackbox.xyz>",
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "^27.4.1",
     "@types/node": "^17.0.23",
+    "husky": "^8.0.1",
     "jest": "^27.5.1",
     "npm-run-all": "^4.1.5",
     "prettier": "^2.6.1",
@@ -34,7 +31,5 @@
     "ts-node": "^10.7.0",
     "typescript": "^4.6.3"
   },
-  "dependencies": {
-    "tslib": "^2.3.1"
-  }
+  "dependencies": {}
 }
