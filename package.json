@@ -1,6 +1,6 @@
 {
   "name": "@stackbox-dev/stdlib",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Node.js Standary Utility Functions",
   "main": "dist/index.js",
   "repository": {
