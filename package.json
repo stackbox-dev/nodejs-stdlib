@@ -1,5 +1,5 @@
 {
-  "name": "@stackbox/stdlib",
+  "name": "@stackbox-dev/stdlib",
   "version": "2.0.0",
   "description": "Node.js Standary Utility Functions",
   "main": "dist/index.js",
@@ -13,7 +13,8 @@
     "pretty-quick": "pretty-quick --staged --pattern \"./src/**/*.{js,ts,json}\"",
     "clean": "rimraf dist",
     "test": "jest",
-    "build": "run-s clean tsc"
+    "build": "run-s clean tsc",
+    "prepublishOnly": "npm run build"
   },
   "author": "Stackbox <dev@stackbox.xyz>",
   "license": "MIT",
