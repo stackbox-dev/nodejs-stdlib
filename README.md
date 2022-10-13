@@ -14,15 +14,19 @@
 
 ### Install
 
-- All stackbox nodejs libraries are hosted in GCP Artifact NPM Registry
+- All stackbox nodejs libraries are hosted in Github Packages
 - Paste the following snippet in the `.npmrc` file
+  ```
+  @stackbox-dev:registry=https://npm.pkg.github.com
+  ```
+- 
+  Use PAT (Personal Access Tokens) [Github Help](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry#authenticating-with-a-personal-access-token)
+  1. generate PAT from github
+  2. Run npm login like the following
+  ```
+  npm login --scope=@OWNER --registry=https://npm.pkg.github.com
 
-```
-@stackbox:registry=https://us-npm.pkg.dev/sbx-ci-cd/npm-public/
-//us-npm.pkg.dev/sbx-ci-cd/npm-public/:always-auth=true%
-```
-
-- If the npm registry is private, authentication token needs to be generated using
-  `npx google-artifactregistry-auth --repo-config=.npmrc`
-- You can have that as a npm-script in package.json and run it whenever you need to run `npm install` or `npm upgrade`
-- `npm install @stackbox/stdlib`
+  > Username: USERNAME
+  > Password: TOKEN
+  > Email: PUBLIC-EMAIL-ADDRESS
+  ```
