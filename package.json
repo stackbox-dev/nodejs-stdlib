@@ -13,7 +13,8 @@
     "pretty-quick": "pretty-quick --staged --pattern \"./src/**/*.{js,ts,json}\"",
     "clean": "rimraf dist",
     "test": "jest",
-    "build": "run-s clean tsc",
+    "transpile": "tsc",
+    "build": "run-s clean transpile",
     "prepublishOnly": "npm run build"
   },
   "author": "Stackbox <dev@stackbox.xyz>",
