@@ -2,6 +2,8 @@ export type CompareFn<T> = (a: T, b: T) => number;
 
 export type KeyFn<T> = (a: T) => number | string;
 
+export type UnaryFn<T, U> = (x: T) => U;
+
 export const compareNum: CompareFn<number> = (a, b) =>
   a < b ? -1 : a > b ? 1 : 0;
 
@@ -188,3 +190,15 @@ export function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
     );
   });
 }
+
+export const Memoize = <T, U>(fn: UnaryFn<T, U>): UnaryFn<T, U> => {
+  const cache = new Map<T, U>();
+  return (x) => {
+    let value = cache.get(x);
+    if (value == null) {
+      value = fn(x);
+    }
+    cache.set(x, value);
+    return value;
+  };
+};
