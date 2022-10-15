@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "repository": {
     "type": "git",
-    "url": "git@gitlab.com:stackbox-group/nodejs-libs/stdlib.git"
+    "url": "git@github.com:stackbox-dev/nodejs-stdlib.git"
   },
   "scripts": {
     "prepare": "husky install",
