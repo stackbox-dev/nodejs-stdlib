@@ -4,11 +4,25 @@ export type KeyFn<T> = (a: T) => number | string;
 
 export type UnaryFn<T, U> = (x: T) => U;
 
+export type PickNullableFields<
+  T,
+  NK extends keyof T = {
+    [K in keyof T]: null extends T[K] ? K : never;
+  }[keyof T],
+  NP = Pick<T, NK>
+> = { [K in keyof NP]: NonNullable<NP[K]> };
+
 export const compareNum: CompareFn<number> = (a, b) =>
   a < b ? -1 : a > b ? 1 : 0;
 
 export const round = (num: number, decimals: number) =>
   Math.round((num + Number.EPSILON) * 10 ** decimals) / 10 ** decimals;
+
+export const roundUp = (num: number, decimals: number) =>
+  Math.ceil((num + Number.EPSILON) * 10 ** decimals) / 10 ** decimals;
+
+export const roundDown = (num: number, decimals: number) =>
+  Math.floor((num + Number.EPSILON) * 10 ** decimals) / 10 ** decimals;
 
 export const SortBy = <T>(...fns: KeyFn<T>[]): CompareFn<T> => {
   if (fns.length === 1) {
@@ -155,14 +169,6 @@ export const sumBy = <T>(items: T[], fn: (x: T) => number): number => {
   }
   return s;
 };
-
-export type PickNullableFields<
-  T,
-  NK extends keyof T = {
-    [K in keyof T]: null extends T[K] ? K : never;
-  }[keyof T],
-  NP = Pick<T, NK>
-> = { [K in keyof NP]: NonNullable<NP[K]> };
 
 export function shuffleArray<T>(array: T[]) {
   const output = [...array];
