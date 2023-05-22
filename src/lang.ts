@@ -64,6 +64,18 @@ export const unique = <T>(items: T[]): T[] => {
   return resp;
 };
 
+export const uniqueBy = <T>(items: T[], fn: KeyFn<T>): T[] => {
+  const seen = new Set<string | number>();
+  const resp: T[] = [];
+  for (const item of items) {
+    const value = fn(item);
+    if (seen.has(value)) continue;
+    resp.push(item);
+    seen.add(value);
+  }
+  return resp;
+};
+
 export const intersection = <T>(items1: T[], items2: T[]) => {
   const items2Set = new Set(items2);
   const inters = new Set<T>();
