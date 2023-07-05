@@ -5,11 +5,14 @@ module.exports = {
   bail: 1,
   modulePaths: ["<rootDir>/src"],
   testPathIgnorePatterns: ["<rootDir>/node_modules"],
-  globals: {
-    "ts-jest": {
-      diagnostics: false,
-      isolatedModules: false,
-      include: [],
-    },
+  transform: {
+    "^.+\\.tsx?$": [
+      "ts-jest",
+      {
+        diagnostics: false,
+        isolatedModules: false,
+        include: [],
+      },
+    ],
   },
 };

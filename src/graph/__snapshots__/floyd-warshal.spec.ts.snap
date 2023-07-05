@@ -1,58 +1,58 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`success topo - t1 1`] = `
-Array [
-  Object {
+[
+  {
     "child": "5ab489c9-824c-4f2b-a021-54dedd2db6bd",
     "distance": 0,
     "parent": "5ab489c9-824c-4f2b-a021-54dedd2db6bd",
   },
-  Object {
+  {
     "child": "57fea751-6c21-4eb1-9262-ea97ff45553c",
     "distance": 1,
     "parent": "5ab489c9-824c-4f2b-a021-54dedd2db6bd",
   },
-  Object {
+  {
     "child": "f03626f2-1852-45b8-b6ad-b59bde38b3fd",
     "distance": 1,
     "parent": "5ab489c9-824c-4f2b-a021-54dedd2db6bd",
   },
-  Object {
+  {
     "child": "322c07a4-06ce-4766-964c-2ccc7d977cbc",
     "distance": 2,
     "parent": "5ab489c9-824c-4f2b-a021-54dedd2db6bd",
   },
-  Object {
+  {
     "child": "9c550989-3e19-4cf5-ab28-b8e0881e2dac",
     "distance": 0,
     "parent": "9c550989-3e19-4cf5-ab28-b8e0881e2dac",
   },
-  Object {
+  {
     "child": "5c1a9dca-f58a-4f49-9909-576c48ab20c1",
     "distance": 1,
     "parent": "9c550989-3e19-4cf5-ab28-b8e0881e2dac",
   },
-  Object {
+  {
     "child": "57fea751-6c21-4eb1-9262-ea97ff45553c",
     "distance": 0,
     "parent": "57fea751-6c21-4eb1-9262-ea97ff45553c",
   },
-  Object {
+  {
     "child": "322c07a4-06ce-4766-964c-2ccc7d977cbc",
     "distance": 1,
     "parent": "57fea751-6c21-4eb1-9262-ea97ff45553c",
   },
-  Object {
+  {
     "child": "f03626f2-1852-45b8-b6ad-b59bde38b3fd",
     "distance": 0,
     "parent": "f03626f2-1852-45b8-b6ad-b59bde38b3fd",
   },
-  Object {
+  {
     "child": "5c1a9dca-f58a-4f49-9909-576c48ab20c1",
     "distance": 0,
     "parent": "5c1a9dca-f58a-4f49-9909-576c48ab20c1",
   },
-  Object {
+  {
     "child": "322c07a4-06ce-4766-964c-2ccc7d977cbc",
     "distance": 0,
     "parent": "322c07a4-06ce-4766-964c-2ccc7d977cbc",
@@ -61,43 +61,43 @@ Array [
 `;
 
 exports[`success topo - t2 1`] = `
-Array [
-  Object {
+[
+  {
     "child": "5ab489c9-824c-4f2b-a021-54dedd2db6bd",
     "distance": 0,
     "parent": "5ab489c9-824c-4f2b-a021-54dedd2db6bd",
   },
-  Object {
+  {
     "child": "57fea751-6c21-4eb1-9262-ea97ff45553c",
-    "distance": 1,
-    "parent": "5ab489c9-824c-4f2b-a021-54dedd2db6bd",
-  },
-  Object {
-    "child": "f03626f2-1852-45b8-b6ad-b59bde38b3fd",
-    "distance": 1,
-    "parent": "5ab489c9-824c-4f2b-a021-54dedd2db6bd",
-  },
-  Object {
-    "child": "322c07a4-06ce-4766-964c-2ccc7d977cbc",
     "distance": 2,
     "parent": "5ab489c9-824c-4f2b-a021-54dedd2db6bd",
   },
-  Object {
+  {
+    "child": "f03626f2-1852-45b8-b6ad-b59bde38b3fd",
+    "distance": 2,
+    "parent": "5ab489c9-824c-4f2b-a021-54dedd2db6bd",
+  },
+  {
+    "child": "322c07a4-06ce-4766-964c-2ccc7d977cbc",
+    "distance": 4,
+    "parent": "5ab489c9-824c-4f2b-a021-54dedd2db6bd",
+  },
+  {
     "child": "57fea751-6c21-4eb1-9262-ea97ff45553c",
     "distance": 0,
     "parent": "57fea751-6c21-4eb1-9262-ea97ff45553c",
   },
-  Object {
+  {
     "child": "322c07a4-06ce-4766-964c-2ccc7d977cbc",
-    "distance": 1,
+    "distance": 2,
     "parent": "57fea751-6c21-4eb1-9262-ea97ff45553c",
   },
-  Object {
+  {
     "child": "f03626f2-1852-45b8-b6ad-b59bde38b3fd",
     "distance": 0,
     "parent": "f03626f2-1852-45b8-b6ad-b59bde38b3fd",
   },
-  Object {
+  {
     "child": "322c07a4-06ce-4766-964c-2ccc7d977cbc",
     "distance": 0,
     "parent": "322c07a4-06ce-4766-964c-2ccc7d977cbc",

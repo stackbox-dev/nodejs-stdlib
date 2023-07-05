@@ -13,7 +13,7 @@ export function buildDAGTransitiveClosure<T>(
   const indexedEdges = edges.map((e) => {
     const from = nodeIndex.get(e[0])!;
     const to = nodeIndex.get(e[1])!;
-    return [from, to] as [number, number];
+    return [from, to, e[2]] as [number, number, number];
   });
 
   const dm = buildDMUsingFloydWarshal(nodes.length, indexedEdges);
@@ -22,8 +22,11 @@ export function buildDAGTransitiveClosure<T>(
 
 // build Distance Matrix using Floyd Warshal
 // https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm
-// N - number of nodes/vertexes, edges - array of [from, to]
-export function buildDMUsingFloydWarshal(N: number, edges: [number, number][]) {
+// N - number of nodes/vertexes, edges - array of [from, to, distance]
+export function buildDMUsingFloydWarshal(
+  N: number,
+  edges: [number, number, number][]
+) {
   const dm: number[][] = [];
   for (let i = 0; i < N; i++) {
     const row: number[] = [];
@@ -33,8 +36,8 @@ export function buildDMUsingFloydWarshal(N: number, edges: [number, number][]) {
     }
   }
 
-  for (const [from, to] of edges) {
-    dm[from][to] = 1;
+  for (const [from, to, distance] of edges) {
+    dm[from][to] = distance;
   }
   for (let i = 0; i < N; i++) {
     dm[i][i] = 0;

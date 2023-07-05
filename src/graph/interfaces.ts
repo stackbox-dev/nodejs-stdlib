@@ -1,8 +1,8 @@
 // DG - Directed Graph
 // DAG - Directed Acyclic Graph
 
-// [parent, child]
-export type Edge<T> = [T, T];
+// [parent, child, distance]
+export type Edge<T> = [T, T, number];
 
 export type TransitiveClosure<T> = {
   parent: T;
