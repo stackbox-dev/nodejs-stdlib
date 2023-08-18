@@ -2,7 +2,7 @@ import { Edge, TransitiveClosure, INF, add } from "./interfaces";
 import { getNodesFromEdges } from "./utils";
 
 export function buildDAGTransitiveClosure<T>(
-  edges: Edge<T>[]
+  edges: Edge<T>[],
 ): TransitiveClosure<T>[] {
   const nodes = getNodesFromEdges(edges);
   const N = nodes.length;
@@ -25,7 +25,7 @@ export function buildDAGTransitiveClosure<T>(
 // N - number of nodes/vertexes, edges - array of [from, to, distance]
 export function buildDMUsingFloydWarshal(
   N: number,
-  edges: [number, number, number][]
+  edges: [number, number, number][],
 ) {
   const dm: number[][] = [];
   for (let i = 0; i < N; i++) {

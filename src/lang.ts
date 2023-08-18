@@ -9,7 +9,7 @@ export type PickNullableFields<
   NK extends keyof T = {
     [K in keyof T]: null extends T[K] ? K : never;
   }[keyof T],
-  NP = Pick<T, NK>
+  NP = Pick<T, NK>,
 > = { [K in keyof NP]: NonNullable<NP[K]> };
 
 export const compareNum: CompareFn<number> = (a, b) =>
@@ -105,7 +105,7 @@ export const arrayToIntSequence = (arr: number[]): IntSequence[] => {
 
 export const areIntSequencesOverlapping = (
   s1: IntSequence[],
-  s2: IntSequence[]
+  s2: IntSequence[],
 ) => {
   for (const p1 of s1) {
     for (const p2 of s2) {
@@ -118,7 +118,7 @@ export const areIntSequencesOverlapping = (
 export const groupBy = <T, U, V>(
   iterable: Iterable<T>,
   keyFunc: (val: T) => U,
-  groupTransform: (group: T[]) => V
+  groupTransform: (group: T[]) => V,
 ): Map<U, V> => {
   const groupMap = new Map<U, T[]>();
 
@@ -204,7 +204,7 @@ export function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
     stream.on("data", (chunk) => chunks.push(chunk));
     stream.on("error", (err) => reject(err));
     stream.on("end", () =>
-      resolve(chunks.length === 1 ? chunks[0] : Buffer.concat(chunks))
+      resolve(chunks.length === 1 ? chunks[0] : Buffer.concat(chunks)),
     );
   });
 }

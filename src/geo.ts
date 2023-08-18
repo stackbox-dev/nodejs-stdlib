@@ -33,7 +33,7 @@ export const haversine = (
   lat1: number,
   lon1: number,
   lat2: number,
-  lon2: number
+  lon2: number,
 ) => {
   // in degrees
   // convert to radians
@@ -56,7 +56,7 @@ export const bearing = (
   lat1: number,
   lon1: number,
   lat2: number,
-  lon2: number
+  lon2: number,
 ) => {
   // convert to radians
   lat1 = convToRad(lat1);
@@ -67,7 +67,7 @@ export const bearing = (
   const dLon = lon2 - lon1;
   return atan2(
     sin(dLon) * cos(lat2),
-    cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
+    cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon),
   );
 };
 
@@ -77,7 +77,7 @@ export const bearingInDegs = (
   lat1: number,
   lon1: number,
   lat2: number,
-  lon2: number
+  lon2: number,
 ) => {
   const rads = bearing(lat1, lon1, lat2, lon2);
   const degs = convToDeg(rads);
