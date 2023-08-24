@@ -1,6 +1,6 @@
 export type CompareFn<T> = (a: T, b: T) => number;
 
-export type KeyFn<T> = (a: T) => number | string;
+export type KeyFn<T, V = number | string> = (a: T) => V;
 
 export type UnaryFn<T, U> = (x: T) => U;
 
@@ -32,19 +32,31 @@ export const SortBy = <T>(...fns: KeyFn<T>[]): CompareFn<T> => {
   return (a, b) => {
     for (const fn of fns) {
       const diff = compareWithKey(a, b, fn);
-      if (diff !== 0) return diff;
+      if (diff !== 0) {
+        return diff;
+      }
     }
     return 0;
   };
 };
 
-function compareWithKey<T>(a: T, b: T, keyFn: KeyFn<T>) {
+function compareWithKey<T, V = number | string>(
+  a: T,
+  b: T,
+  keyFn: KeyFn<T, V>,
+) {
   const aVal = keyFn(a);
   const bVal = keyFn(b);
   if (typeof aVal === "number" && typeof bVal === "number") {
     return aVal - bVal;
   } else {
-    return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+    if (aVal < bVal) {
+      return -1;
+    } else if (aVal > bVal) {
+      return 1;
+    } else {
+      return 0;
+    }
   }
 }
 
@@ -57,19 +69,26 @@ export const unique = <T>(items: T[]): T[] => {
   const seen = new Set<T>();
   const resp: T[] = [];
   for (const item of items) {
-    if (seen.has(item)) continue;
+    if (seen.has(item)) {
+      continue;
+    }
     resp.push(item);
     seen.add(item);
   }
   return resp;
 };
 
-export const uniqueBy = <T>(items: T[], fn: KeyFn<T>): T[] => {
-  const seen = new Set<string | number>();
+export const uniqueBy = <T, V = string | number>(
+  items: T[],
+  fn: KeyFn<T, V>,
+): T[] => {
+  const seen = new Set<V>();
   const resp: T[] = [];
   for (const item of items) {
     const value = fn(item);
-    if (seen.has(value)) continue;
+    if (seen.has(value)) {
+      continue;
+    }
     resp.push(item);
     seen.add(value);
   }
@@ -109,7 +128,9 @@ export const areIntSequencesOverlapping = (
 ) => {
   for (const p1 of s1) {
     for (const p2 of s2) {
-      if (p1[0] < p2[1] || p1[1] > p2[0]) return true;
+      if (p1[0] < p2[1] || p1[1] > p2[0]) {
+        return true;
+      }
     }
   }
   return false;
@@ -129,7 +150,7 @@ export const groupBy = <T, U, V>(
       groupMap.set(key, []);
     }
 
-    groupMap.get(key)!.push(item);
+    groupMap.get(key)?.push(item);
   }
   const map = new Map<U, V>();
   for (const [k, v] of groupMap) {
@@ -140,35 +161,35 @@ export const groupBy = <T, U, V>(
 
 export const setEquals = <T>(items1: T[], items2: T[]) => {
   for (const i1 of items1) {
-    if (items2.indexOf(i1) === -1) return false;
+    if (items2.indexOf(i1) === -1) {
+      return false;
+    }
   }
   for (const i2 of items2) {
-    if (items1.indexOf(i2) === -1) return false;
+    if (items1.indexOf(i2) === -1) {
+      return false;
+    }
   }
   return true;
 };
 
-export const minBy = <T>(items: T[], fn: (x: T) => number): T | null => {
-  let m: number | null = null;
+export const minBy = <T>(items: T[], ...fn: KeyFn<T>[]): T | null => {
   let s: T | null = null;
+  const comparator = SortBy(...fn);
   for (let item of items) {
-    const v = fn(item);
-    if (m === null || m > v) {
+    if (s === null || comparator(item, s) < 0) {
       s = item;
-      m = v;
     }
   }
   return s;
 };
 
-export const maxBy = <T>(items: T[], fn: (x: T) => number): T | null => {
-  let m: number | null = null;
+export const maxBy = <T>(items: T[], ...fn: KeyFn<T>[]): T | null => {
   let s: T | null = null;
+  const comparator = SortBy(...fn);
   for (const item of items) {
-    const v = fn(item);
-    if (m === null || m < v) {
+    if (s === null || comparator(item, s) > 0) {
       s = item;
-      m = v;
     }
   }
   return s;
