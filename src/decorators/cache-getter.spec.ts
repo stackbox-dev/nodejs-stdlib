@@ -1,6 +1,6 @@
 import { cacheGetter } from "./cache-getter";
 
-test("cacheGetter should ensure getter is called only first time", () => {
+test("cacheGetter should ensure getter is called only first time - primitive", () => {
   let callCount = 0;
   class Sample {
     private readonly data: number[] = [1, 2, 3, 4, 5];
@@ -17,5 +17,30 @@ test("cacheGetter should ensure getter is called only first time", () => {
   expect(s.sum).toBe(15);
   expect(callCount).toBe(1);
   expect(s.sum).toBe(15);
+  expect(callCount).toBe(1);
+});
+
+test("cacheGetter should ensure getter is called only first time - object", () => {
+  let callCount = 0;
+  const obj = {
+    a: 1,
+    b: "A",
+    c: { x: 1 },
+  };
+  class Sample {
+    @cacheGetter
+    get obj() {
+      callCount++;
+      return obj;
+    }
+  }
+
+  let s = new Sample();
+  expect(callCount).toBe(0);
+  expect(s.obj).toBe(obj);
+  expect(callCount).toBe(1);
+  expect(s.obj).toBe(obj);
+  expect(callCount).toBe(1);
+  expect(s.obj).toBe(obj);
   expect(callCount).toBe(1);
 });
