@@ -63,7 +63,9 @@ export function buildClosureFromDM<T>(nodes: T[], dm: number[][]) {
   for (let from = 0; from < N; from++) {
     for (let to = 0; to < N; to++) {
       const distance = dm[from][to];
-      if (distance === INF) continue;
+      if (distance === INF) {
+        continue;
+      }
       closure.push({ child: nodes[to], parent: nodes[from], distance });
     }
   }

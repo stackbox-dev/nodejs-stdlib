@@ -13,6 +13,8 @@ export type TransitiveClosure<T> = {
 export const INF = Number.MAX_SAFE_INTEGER;
 
 export function add(x: number, y: number): number {
-  if (x === INF || y === INF) return INF;
+  if (x === INF || y === INF) {
+    return INF;
+  }
   return x + y;
 }

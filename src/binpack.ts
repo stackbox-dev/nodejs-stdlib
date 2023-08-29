@@ -1,5 +1,5 @@
 export class Size {
-  private dims: number[];
+  private readonly dims: number[];
 
   constructor(dims: number[]) {
     this.dims = [...dims];
@@ -21,8 +21,12 @@ export class Size {
     for (let i = 0; i < this.dims.length; i++) {
       const t1 = this.get(i);
       const t2 = that.get(i);
-      if (t1 < t2) return -1;
-      if (t1 > t2) return 1;
+      if (t1 < t2) {
+        return -1;
+      }
+      if (t1 > t2) {
+        return 1;
+      }
     }
     return 0;
   }
@@ -31,7 +35,9 @@ export class Size {
     for (let i = 0; i < this.dims.length; i++) {
       const t1 = this.get(i);
       const t2 = that.get(i);
-      if (t2 > t1) return false;
+      if (t2 > t1) {
+        return false;
+      }
     }
     return true;
   }
