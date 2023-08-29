@@ -44,3 +44,25 @@ test("cacheGetter should ensure getter is called only first time - object", () =
   expect(s.obj).toBe(obj);
   expect(callCount).toBe(1);
 });
+
+test("cacheGetter should work with destructuring", () => {
+  let callCount = 0;
+  const obj = {
+    a: 1,
+    b: "A",
+    c: { x: 1 },
+  };
+  class Sample {
+    @cacheGetter
+    get obj() {
+      callCount++;
+      return obj;
+    }
+  }
+
+  let s = new Sample();
+  let { obj: obj1 } = s;
+  expect(obj1).toStrictEqual(obj);
+  let { obj: obj2 } = s;
+  expect(obj2).toStrictEqual(obj);
+});
