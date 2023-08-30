@@ -19,7 +19,6 @@ export function v4(): string {
  * rand_b:
  * The final 62 bits of pseudo-random data to provide uniqueness as per Section 6.2 and Section 6.6.
  */
-let seq = 0;
 export function v7(): string {
   const timeComponent = Date.now().toString(16).padStart(12, "0");
 
@@ -33,12 +32,18 @@ export function v7(): string {
     "-" +
     timeComponent.slice(8, 12) +
     "-7" +
-    (seq++).toString(16).padStart(3, "0") +
+    nextSeq().toString(16).padStart(3, "0") +
     "-" +
     rndArrHex.slice(0, 4) +
     "-" +
     rndArrHex.slice(4, 16)
   );
+}
+
+let seq = 0;
+function nextSeq() {
+  seq = seq === 0xfff ? 0 : seq + 1;
+  return seq;
 }
 
 export function fromBuffer(buffer: Buffer): string {
