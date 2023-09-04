@@ -12,8 +12,15 @@ export type PickNullableFields<
   NP = Pick<T, NK>,
 > = { [K in keyof NP]: NonNullable<NP[K]> };
 
-export const compareNum: CompareFn<number> = (a, b) =>
-  a < b ? -1 : a > b ? 1 : 0;
+export const compareNum: CompareFn<number> = (a, b) => {
+  if (a < b) {
+    return -1;
+  } else if (a > b) {
+    return 1;
+  } else {
+    return 0;
+  }
+};
 
 export const round = (num: number, decimals: number) =>
   Math.round((num + Number.EPSILON) * 10 ** decimals) / 10 ** decimals;
@@ -219,7 +226,11 @@ export function selectRandom<T>(array: T[]) {
   return array[Math.min(index, array.length - 1)];
 }
 
-export function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
+export interface DataStream {
+  on(eventName: string | symbol, listener: (...args: any[]) => void): this;
+}
+
+export function streamToBuffer(stream: DataStream): Promise<Buffer> {
   return new Promise<Buffer>((resolve, reject) => {
     const chunks: Buffer[] = [];
     stream.on("data", (chunk) => chunks.push(chunk));
