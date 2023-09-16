@@ -26,7 +26,7 @@ export function buildDAGTransitiveClosure<T>(
 export function buildDMUsingFloydWarshal(
   N: number,
   edges: [number, number, number][],
-) {
+): number[][] {
   const dm: number[][] = [];
   for (let i = 0; i < N; i++) {
     const row: number[] = [];
