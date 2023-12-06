@@ -18,3 +18,22 @@ export function add(x: number, y: number): number {
   }
   return x + y;
 }
+
+export interface ShortestPath<T> {
+  path: T[];
+  distance: number;
+}
+
+export interface ShortestPathAlgo<T, E extends Edge<T>> {
+  calculate(
+    srcNode: T,
+    dstNode: T,
+    distFn: (edge: E) => number,
+  ): ShortestPath<T>;
+}
+
+export interface PriorityQueue<T> {
+  push(node: T): void;
+  pop(): T | undefined;
+  size: number;
+}
