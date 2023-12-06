@@ -5,7 +5,10 @@ const INF = 1e9;
 
 const createSPAlgoUndirected = (edges: any[]) => {
   return new DijkstraShortestPath(
-    edges,
+    edges.flatMap((e) => [
+      { from: e[0], to: e[1], distance: e[2] },
+      { from: e[1], to: e[0], distance: e[2] },
+    ]),
     () => new mnemonist.Heap<HeapNode>((a, b) => a.distance - b.distance),
     INF,
   );
@@ -13,7 +16,7 @@ const createSPAlgoUndirected = (edges: any[]) => {
 
 const createSPAlgoDirected = (edges: any[]) => {
   return new DijkstraShortestPath(
-    edges,
+    edges.map((e) => ({ from: e[0], to: e[1], distance: e[2] })),
     () => new mnemonist.Heap<HeapNode>((a, b) => a.distance - b.distance),
     INF,
   );

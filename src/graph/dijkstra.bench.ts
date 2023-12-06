@@ -39,7 +39,9 @@ const edges = generateSampleData(N, EDGE_PROB);
 
 let result: any;
 // warmup
-const spa = createSPA(edges);
+const spa = createSPA(
+  edges.map((e) => ({ from: e[0], to: e[1], distance: e[2] })),
+);
 for (let i = 0; i < ITERS; i++) {
   const a = Math.floor(Math.random() * N);
   const b = Math.floor(Math.random() * N);

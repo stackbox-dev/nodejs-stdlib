@@ -1,5 +1,5 @@
 import {
-  Edge,
+  EdgeDef,
   PriorityQueue,
   ShortestPath,
   ShortestPathAlgo,
@@ -12,7 +12,7 @@ export class HeapNode {
   ) {}
 }
 
-export class DijkstraShortestPath<T, E extends Edge<T>>
+export class DijkstraShortestPath<T, E extends EdgeDef<T>>
   implements ShortestPathAlgo<T, E>
 {
   private readonly nodeToIndex = new Map<T, number>();
@@ -24,7 +24,7 @@ export class DijkstraShortestPath<T, E extends Edge<T>>
     public priorityQueueFactory: () => PriorityQueue<HeapNode>,
     public readonly INF = 1e9,
   ) {
-    const nodeSet = new Set(edges.flatMap((e) => [e[0], e[1]]));
+    const nodeSet = new Set(edges.flatMap((e) => [e.from, e.to]));
     let index = 0;
     for (const node of nodeSet) {
       this.nodes[index] = node;
@@ -33,11 +33,11 @@ export class DijkstraShortestPath<T, E extends Edge<T>>
       index++;
     }
     for (const edge of edges) {
-      const fromId = this.nodeToIndex.get(edge[0]);
+      const fromId = this.nodeToIndex.get(edge.from);
       if (fromId == null) {
         throw new Error();
       }
-      const toId = this.nodeToIndex.get(edge[1]);
+      const toId = this.nodeToIndex.get(edge.to);
       if (toId == null) {
         throw new Error();
       }
@@ -51,7 +51,7 @@ export class DijkstraShortestPath<T, E extends Edge<T>>
   calculate(
     srcNode: T,
     dstNode: T,
-    distFn: (edge: E) => number = (e) => e[2],
+    distFn: (edge: E) => number = (e) => e.distance,
   ): ShortestPath<T> {
     const src = this.nodeToIndex.get(srcNode)!;
     if (src == null) {
@@ -94,7 +94,7 @@ export class DijkstraShortestPath<T, E extends Edge<T>>
         }
         if (dist < 0) {
           throw new Error(
-            `Negative distance ${dist} for edge ${neighbor.edge[0]} -> ${neighbor.edge[1]}`,
+            `Negative distance ${dist} for edge ${neighbor.edge.from} -> ${neighbor.edge.to}`,
           );
         }
         const candidate = distances[node] + dist;

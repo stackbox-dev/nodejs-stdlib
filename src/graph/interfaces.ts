@@ -4,6 +4,12 @@
 // [parent, child, distance]
 export type Edge<T> = [T, T, number];
 
+export interface EdgeDef<T> {
+  from: T;
+  to: T;
+  distance: number;
+}
+
 export type TransitiveClosure<T> = {
   parent: T;
   child: T;
@@ -24,7 +30,7 @@ export interface ShortestPath<T> {
   distance: number;
 }
 
-export interface ShortestPathAlgo<T, E extends Edge<T>> {
+export interface ShortestPathAlgo<T, E extends EdgeDef<T>> {
   calculate(
     srcNode: T,
     dstNode: T,

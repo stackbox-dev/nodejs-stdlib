@@ -5,6 +5,7 @@ export {
 } from "./floyd-warshal";
 export {
   Edge,
+  EdgeDef,
   TransitiveClosure,
   INF,
   PriorityQueue,
