@@ -24,13 +24,13 @@ function generateSampleData(
 }
 
 const N = 300;
-const EDGE_PROB = 0.05;
-const ITERS = 100;
+const EDGE_PROB = 0.5;
+const ITERS = 10;
 const edges = generateSampleData(N, EDGE_PROB);
 
 let result: any;
 // warmup
-for (let i = 0; i < 100; i++) {
+for (let i = 0; i < ITERS; i++) {
   result = buildDMUsingFloydWarshal(N, edges);
 }
 const start = Date.now();
