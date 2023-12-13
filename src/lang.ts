@@ -1,3 +1,5 @@
+export * as BigInt from "./bigint";
+
 export type CompareFn<T> = (a: T, b: T) => number;
 
 export type KeyFn<T, V = number | string> = (a: T) => V;
