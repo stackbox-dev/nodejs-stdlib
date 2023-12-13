@@ -13,6 +13,7 @@ test("encode", () => {
   expect(encode("AZ12325")).toBe(23885916413n);
   expect(encode("ZZZZZZZZZ")).toBe(101559956668415n);
   expect(encode("AZAZAZAZAZAZA")).toBe(52030720178326943830n);
+  expect(encode("0000000A")).toBe(10n);
   expect(() => encode("a")).toThrow("Invalid character: a");
   expect(() => encode("1a")).toThrow("Invalid character: a");
   expect(() => encode("a1")).toThrow("Invalid character: a");
