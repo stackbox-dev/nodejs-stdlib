@@ -60,3 +60,26 @@ export function fromBuffer(buffer: Buffer): string {
     hex.slice(20, 32)
   );
 }
+
+export function v5(name: string, namespace: string): string {
+  const namespaceBuffer = Buffer.from(namespace.replace(/-/g, ""), "hex");
+  const nameBuffer = Buffer.from(name, "utf8");
+
+  const hash = crypto.createHash("sha1");
+  hash.update(namespaceBuffer);
+  hash.update(nameBuffer);
+  const digest = hash.digest();
+
+  // Set version and variant bits for UUID v5
+  digest[6] = (digest[6] & 0x0f) | 0x50; // Version 5
+  digest[8] = (digest[8] & 0x3f) | 0x80; // Variant 1
+
+  // Format as UUID string
+  return [
+    digest.subarray(0, 4).toString("hex"),
+    digest.subarray(4, 6).toString("hex"),
+    digest.subarray(6, 8).toString("hex"),
+    digest.subarray(8, 10).toString("hex"),
+    digest.subarray(10, 16).toString("hex"),
+  ].join("-");
+}
