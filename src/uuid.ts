@@ -63,6 +63,9 @@ export function fromBuffer(buffer: Buffer): string {
 
 export function v5(name: string, namespace: string): string {
   const namespaceBuffer = Buffer.from(namespace.replace(/-/g, ""), "hex");
+  if (namespaceBuffer.length !== 16) {
+    throw new Error("Namespace must be a 128-bit UUID");
+  }
   const nameBuffer = Buffer.from(name, "utf8");
 
   const hash = crypto.createHash("sha1");
@@ -83,3 +86,10 @@ export function v5(name: string, namespace: string): string {
     digest.subarray(10, 16).toString("hex"),
   ].join("-");
 }
+
+export const NameSpace = {
+  DNS: "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+  URL: "6ba7b811-9dad-11d1-80b4-00c04fd430c8",
+  OID: "6ba7b812-9dad-11d1-80b4-00c04fd430c8",
+  X500: "6ba7b814-9dad-11d1-80b4-00c04fd430c8",
+};
