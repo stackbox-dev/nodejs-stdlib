@@ -65,10 +65,15 @@ export const bearing = (
   lon2 = convToRad(lon2);
 
   const dLon = lon2 - lon1;
-  return atan2(
+  let bearing = atan2(
     sin(dLon) * cos(lat2),
     cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon),
   );
+
+  // Normalize the bearing to be in the range [0, 2π]
+  bearing = (bearing + 2 * PI) % (2 * PI);
+
+  return bearing;
 };
 
 export const normaliseDegs = (degs: number) => (degs + 360) % 360;
