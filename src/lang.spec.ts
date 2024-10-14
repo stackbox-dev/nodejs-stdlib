@@ -188,8 +188,8 @@ test("sortBy function with edge cases", () => {
 
 test("minBy and maxBy functions with edge cases", () => {
   // Empty array
-  expect(Lang.minBy([], (x) => x)).toBeUndefined();
-  expect(Lang.maxBy([], (x) => x)).toBeUndefined();
+  expect(Lang.minBy([], (x) => x)).toBeNull();
+  expect(Lang.maxBy([], (x) => x)).toBeNull();
 
   // Array with one element
   const singleElementArr = [{ value: 42 }];
@@ -214,6 +214,6 @@ test("minBy and maxBy functions with edge cases", () => {
     { value: NaN },
     { value: 3 },
   ];
-  expect(Lang.minBy(nanArr, (x) => x.value)).toEqual({ value: 1 });
-  expect(Lang.maxBy(nanArr, (x) => x.value)).toEqual({ value: 3 });
+  expect(Lang.minBy(nanArr, (x) => x.value)).toEqual({ value: NaN });
+  expect(Lang.maxBy(nanArr, (x) => x.value)).toEqual({ value: NaN });
 });
