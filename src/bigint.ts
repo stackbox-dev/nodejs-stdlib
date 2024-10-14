@@ -3,7 +3,9 @@ export const Alphabets = {
 };
 
 export function encode(str: string, alphabet = Alphabets.BASE36): bigint {
-  if (str.length === 0) return 0n;
+  if (str.length === 0) {
+    return 0n;
+  }
   const base = BigInt(alphabet.length);
   let value = 0n;
   for (let i = 0; i < str.length; i++) {

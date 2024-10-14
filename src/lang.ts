@@ -58,14 +58,12 @@ function compareWithKey<T, V = number | string>(
   const bVal = keyFn(b);
   if (typeof aVal === "number" && typeof bVal === "number") {
     return aVal - bVal;
+  } else if (aVal < bVal) {
+    return -1;
+  } else if (aVal > bVal) {
+    return 1;
   } else {
-    if (aVal < bVal) {
-      return -1;
-    } else if (aVal > bVal) {
-      return 1;
-    } else {
-      return 0;
-    }
+    return 0;
   }
 }
 
@@ -185,7 +183,7 @@ export const setEquals = <T>(items1: T[], items2: T[]) => {
 export const minBy = <T>(items: T[], ...fn: KeyFn<T>[]): T | null => {
   let s: T | null = null;
   const comparator = SortBy(...fn);
-  for (let item of items) {
+  for (const item of items) {
     if (s === null || comparator(item, s) < 0) {
       s = item;
     }
