@@ -13,6 +13,7 @@
     "pretty": "prettier --write \"./src/**/*.{js,ts,json,md}\"",
     "clean": "rimraf dist",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "transpile": "tsc -p tsconfig.build.json",
     "build": "run-s clean transpile",
     "prepublishOnly": "npm run build"

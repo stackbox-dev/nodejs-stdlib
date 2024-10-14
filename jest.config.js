@@ -15,4 +15,8 @@ module.exports = {
       },
     ],
   },
+  collectCoverage: true,
+  coverageDirectory: "<rootDir>/coverage",
+  coverageReporters: ["text", "lcov"],
+  coveragePathIgnorePatterns: ["/node_modules/"],
 };

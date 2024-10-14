@@ -22,3 +22,5 @@ config/*
 !config/dev.yml
 !config/test.yml
 bin
+
+coverage
