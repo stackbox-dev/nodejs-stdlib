@@ -102,6 +102,17 @@ export const uniqueBy = <T, V = string | number>(
   return resp;
 };
 
+export const uniqueCount = <T>(items: T[]): number => {
+  const seen = new Set<T>();
+  for (const item of items) {
+    if (seen.has(item)) {
+      continue;
+    }
+    seen.add(item);
+  }
+  return seen.size;
+};
+
 export const intersection = <T>(items1: T[], items2: T[]) => {
   const items2Set = new Set(items2);
   const inters = new Set<T>();
@@ -143,10 +154,10 @@ export const areIntSequencesOverlapping = (
   return false;
 };
 
-export const groupBy = <T, U, V>(
+export const groupBy = <T, U, V = T[]>(
   iterable: Iterable<T>,
   keyFunc: (val: T) => U,
-  groupTransform: (group: T[]) => V,
+  groupTransform?: (group: T[]) => V,
 ): Map<U, V> => {
   const groupMap = new Map<U, T[]>();
 
@@ -156,9 +167,13 @@ export const groupBy = <T, U, V>(
     if (!groupMap.has(key)) {
       groupMap.set(key, []);
     }
-
     groupMap.get(key)?.push(item);
   }
+
+  if (!groupTransform) {
+    return groupMap as Map<U, V>;
+  }
+
   const map = new Map<U, V>();
   for (const [k, v] of groupMap) {
     map.set(k, groupTransform(v));
@@ -210,6 +225,16 @@ export const sumBy = <T>(items: T[], fn: (x: T) => number): number => {
   return s;
 };
 
+export const countBy = <T>(items: T[], fn: (x: T) => boolean): number => {
+  let s = 0;
+  for (const item of items) {
+    if (fn(item)) {
+      s++;
+    }
+  }
+  return s;
+};
+
 export function shuffleArray<T>(array: T[]) {
   const output = [...array];
   for (let i = output.length - 1; i > 0; i--) {
@@ -252,3 +277,146 @@ export const Memoize = <T, U>(fn: UnaryFn<T, U>): UnaryFn<T, U> => {
     return value;
   };
 };
+
+export class MapWithKeyFn<K, V> implements Map<K, V> {
+  private data = new Map<string, [K, V]>();
+  constructor(
+    entries: [K, V][],
+    private keyfn: (k: K) => string,
+  ) {
+    for (const [k, v] of entries) {
+      this.data.set(keyfn(k), [k, v]);
+    }
+  }
+  get(k: K): V | undefined {
+    return this.data.get(this.keyfn(k))?.[1];
+  }
+  set(k: K, v: V): this {
+    this.data.set(this.keyfn(k), [k, v]);
+    return this;
+  }
+  delete(k: K): boolean {
+    return this.data.delete(this.keyfn(k));
+  }
+  has(k: K): boolean {
+    return this.data.has(this.keyfn(k));
+  }
+  clear(): void {
+    this.data.clear();
+  }
+  entries(): IterableIterator<[K, V]> {
+    return this.data.values();
+  }
+  *keys(): IterableIterator<K> {
+    for (const [k] of this.data.values()) {
+      yield k;
+    }
+  }
+  *values(): IterableIterator<V> {
+    for (const [, v] of this.data.values()) {
+      yield v;
+    }
+  }
+  [Symbol.iterator](): IterableIterator<[K, V]> {
+    return this.data.values();
+  }
+  [Symbol.toStringTag]: "MapWithKeyFn";
+  get size(): number {
+    return this.data.size;
+  }
+  forEach(
+    callbackfn: (value: V, key: K, map: Map<K, V>) => void,
+    thisArg?: any,
+  ): void {
+    for (const [k, v] of this.data.values()) {
+      callbackfn.call(thisArg, v, k, this);
+    }
+  }
+}
+
+class Node<T> {
+  value?: T;
+  children = new Map<string, Node<T>>();
+}
+
+export class MultiLevelMap<T> {
+  private root = new Node<T>();
+
+  set(keys: string[], value: T): void {
+    let node = this.root;
+    for (let i = 0, len = keys.length; i < len; i++) {
+      const key = keys[i];
+      let child = node.children.get(key);
+      if (child === undefined) {
+        child = new Node<T>();
+        node.children.set(key, child);
+      }
+      node = child;
+    }
+    node.value = value;
+  }
+
+  get(keys: string[]): T | undefined {
+    let node: Node<T> | undefined = this.root;
+    for (let i = 0, len = keys.length; i < len; i++) {
+      node = node.children.get(keys[i]);
+      if (node === undefined) return undefined;
+    }
+    return node.value;
+  }
+
+  getAll(keys: string[]): T[] {
+    let node: Node<T> | undefined = this.root;
+    for (let i = 0, len = keys.length; i < len; i++) {
+      node = node.children.get(keys[i]);
+      if (node === undefined) return [];
+    }
+    const results: T[] = [];
+    const stack: Node<T>[] = [node];
+    while (stack.length > 0) {
+      const current = stack.pop()!;
+      if (current.value !== undefined) {
+        results.push(current.value);
+      }
+      for (const child of current.children.values()) {
+        stack.push(child);
+      }
+    }
+    return results;
+  }
+
+  has(keys: string[]): boolean {
+    let node: Node<T> | undefined = this.root;
+    for (let i = 0, len = keys.length; i < len; i++) {
+      node = node.children.get(keys[i]);
+      if (node === undefined) return false;
+    }
+    return node.value !== undefined;
+  }
+
+  delete(keys: string[]): boolean {
+    const stack: Array<{ node: Node<T>; key: string }> = [];
+    let node = this.root;
+    for (let i = 0, len = keys.length; i < len; i++) {
+      const key = keys[i];
+      const child = node.children.get(key);
+      if (child === undefined) return false;
+      stack.push({ node, key });
+      node = child;
+    }
+    if (node.value === undefined) return false;
+    node.value = undefined;
+
+    // Cleanup any nodes that no longer hold value or children.
+    for (let i = stack.length - 1; i >= 0; i--) {
+      const { node: parent, key } = stack[i];
+      const child = parent.children.get(key)!;
+      if (child.value === undefined && child.children.size === 0) {
+        parent.children.delete(key);
+      } else {
+        break;
+      }
+    }
+    return true;
+  }
+}

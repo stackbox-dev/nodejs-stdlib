@@ -217,3 +217,228 @@ test("minBy and maxBy functions with edge cases", () => {
   expect(Lang.minBy(nanArr, (x) => x.value)).toEqual({ value: NaN });
   expect(Lang.maxBy(nanArr, (x) => x.value)).toEqual({ value: NaN });
 });
+
+test("MultiLevelMap set and get", () => {
+  const map = new Lang.MultiLevelMap<number>();
+  map.set(["a", "b", "c"], 42);
+  expect(map.get(["a", "b", "c"])).toBe(42);
+  // Attempt to get a value with an incomplete key path should return undefined.
+  expect(map.get(["a", "b"])).toBeUndefined();
+});
+
+test("MultiLevelMap getAll returns all values under a branch", () => {
+  const map = new Lang.MultiLevelMap<string>();
+  map.set(["user", "alice"], "AliceData");
+  map.set(["user", "bob"], "BobData");
+  map.set(["user", "charlie"], "CharlieData");
+  map.set(["system", "config"], "SysConfig");
+
+  const userValues = map.getAll(["user"]);
+  expect(userValues.sort()).toEqual(
+    ["AliceData", "BobData", "CharlieData"].sort(),
+  );
+
+  // For a key path that doesn't exist, getAll should return an empty array.
+  expect(map.getAll(["nonexistent"])).toEqual([]);
+});
+
+test("MultiLevelMap has function", () => {
+  const map = new Lang.MultiLevelMap<boolean>();
+  expect(map.has(["settings", "theme"])).toBe(false);
+  map.set(["settings", "theme"], true);
+  expect(map.has(["settings", "theme"])).toBe(true);
+});
+
+test("MultiLevelMap delete function removes entry and cleans up empty nodes", () => {
+  const map = new Lang.MultiLevelMap<number>();
+  map.set(["a", "b", "c"], 100);
+  map.set(["a", "b", "d"], 200);
+  expect(map.get(["a", "b", "c"])).toBe(100);
+  expect(map.get(["a", "b", "d"])).toBe(200);
+
+  // Delete one entry
+  expect(map.delete(["a", "b", "c"])).toBe(true);
+  expect(map.get(["a", "b", "c"])).toBeUndefined();
+  // The other entry should still exist
+  expect(map.get(["a", "b", "d"])).toBe(200);
+
+  // Attempt deleting a non-existent key path
+  expect(map.delete(["a", "b", "c"])).toBe(false);
+});
+
+test("MultiLevelMap delete cleans up nodes without values", () => {
+  const map = new Lang.MultiLevelMap<string>();
+  map.set(["x", "y", "z"], "deepValue");
+  // Delete the deep value.
+  expect(map.delete(["x", "y", "z"])).toBe(true);
+  // After deletion, getAll from the branch should be empty.
+  expect(map.getAll(["x"])).toEqual([]);
+});
+test("MultiLevelMap overwrites value if set with same keys", () => {
+  const map = new Lang.MultiLevelMap<number>();
+  map.set(["a", "b"], 1);
+  expect(map.get(["a", "b"])).toBe(1);
+  // Overwrite the value at the same key path.
+  map.set(["a", "b"], 2);
+  expect(map.get(["a", "b"])).toBe(2);
+});
+
+test("MultiLevelMap getAll returns only values under branch", () => {
+  const map = new Lang.MultiLevelMap<string>();
+  map.set(["section", "item1"], "value1");
+  map.set(["section", "subsection", "item2"], "value2");
+  map.set(["section", "subsection", "item3"], "value3");
+  map.set(["section", "other"], "value4");
+  map.set(["otherSection", "item"], "value5");
+
+  const results = map.getAll(["section"]);
+  expect(results.sort()).toEqual(
+    ["value1", "value2", "value3", "value4"].sort(),
+  );
+});
+
+test("MultiLevelMap deleting branch cleans intermediate nodes", () => {
+  const map = new Lang.MultiLevelMap<number>();
+  map.set(["a", "b", "c", "d"], 10);
+  map.set(["a", "b", "c", "e"], 20);
+  expect(map.get(["a", "b", "c", "d"])).toBe(10);
+  expect(map.get(["a", "b", "c", "e"])).toBe(20);
+
+  // Delete one leaf value and ensure the other remains.
+  expect(map.delete(["a", "b", "c", "d"])).toBe(true);
+  let items = map.getAll(["a", "b", "c"]);
+  expect(items).toContain(20);
+  expect(items).not.toContain(10);
+
+  // Delete the other leaf value; now the branch should be cleaned up.
+  expect(map.delete(["a", "b", "c", "e"])).toBe(true);
+  items = map.getAll(["a", "b", "c"]);
+  expect(items).toEqual([]);
+});
+
+test("MultiLevelMap complex nested structure with interleaved keys", () => {
+  const map = new Lang.MultiLevelMap<string>();
+  map.set(["level1", "a", "x"], "ax");
+  map.set(["level1", "a", "y"], "ay");
+  map.set(["level1", "b"], "b-main");
+  map.set(["level1", "a", "z", "nested"], "az-nested");
+
+  // Direct retrievals.
+  expect(map.get(["level1", "b"])).toBe("b-main");
+  expect(map.get(["level1", "a", "x"])).toBe("ax");
+  expect(map.get(["level1", "a", "z", "nested"])).toBe("az-nested");
+
+  // getAll at the top level.
+  const all = map.getAll(["level1"]);
+  expect(all.sort()).toEqual(["ax", "ay", "b-main", "az-nested"].sort());
+
+  // getAll for a specific branch.
+  const aBranch = map.getAll(["level1", "a"]);
+  expect(aBranch.sort()).toEqual(["ax", "ay", "az-nested"].sort());
+});
+
+test("MultiLevelMap non-existent keys behavior", () => {
+  const map = new Lang.MultiLevelMap<number>();
+  // Retrieval on a key path that doesn't exist returns undefined.
+  expect(map.get(["non", "existent"])).toBeUndefined();
+  // getAll should return an empty array when no branch exists.
+  expect(map.getAll(["non"])).toEqual([]);
+  // Deleting a non-existent key path returns false.
+  expect(map.delete(["non", "existent"])).toBe(false);
+});
+
+test("MapWithKeyFn basic set and get", () => {
+  type Item = { id: number; name: string };
+  const keyFn = (item: Item) => item.id.toString();
+  const map = new Lang.MapWithKeyFn<Item, string>([], keyFn);
+  const item1: Item = { id: 1, name: "Alice" };
+  const item2: Item = { id: 2, name: "Bob" };
+
+  // Initially, get should return undefined and has should return false.
+  expect(map.get(item1)).toBeUndefined();
+  expect(map.has(item2)).toBe(false);
+
+  // Set values.
+  map.set(item1, "value1");
+  map.set(item2, "value2");
+
+  expect(map.get(item1)).toBe("value1");
+  expect(map.get(item2)).toBe("value2");
+  expect(map.has(item1)).toBe(true);
+  expect(map.has(item2)).toBe(true);
+});
+
+test("MapWithKeyFn update value for existing key", () => {
+  type Item = { id: number; name: string };
+  const keyFn = (item: Item) => item.id.toString();
+  const map = new Lang.MapWithKeyFn<Item, string>([], keyFn);
+  const original: Item = { id: 1, name: "Alice" };
+
+  map.set(original, "initial");
+  expect(map.get(original)).toBe("initial");
+
+  // Update using a different instance with the same key.
+  const updated: Item = { id: 1, name: "Alice Updated" };
+  map.set(updated, "updated");
+  expect(map.get(original)).toBe("updated");
+  expect(map.get(updated)).toBe("updated");
+});
+
+test("MapWithKeyFn iteration and clear", () => {
+  type Item = { id: number; name: string };
+  const keyFn = (item: Item) => item.id.toString();
+  const items: Item[] = [
+    { id: 1, name: "Alice" },
+    { id: 2, name: "Bob" },
+    { id: 3, name: "Charlie" },
+  ];
+  const map = new Lang.MapWithKeyFn<Item, string>([], keyFn);
+  items.forEach((item, idx) => map.set(item, `value${idx + 1}`));
+
+  // Test keys, values, and entries iteration.
+  const keys = [...map.keys()];
+  const values = [...map.values()];
+  const entries = [...map.entries()];
+
+  expect(keys).toHaveLength(3);
+  expect(values).toHaveLength(3);
+  expect(entries).toHaveLength(3);
+
+  // Iterating over the map itself should yield the same entries.
+  expect([...map]).toEqual(entries);
+
+  // Test deletion of a key.
+  expect(map.delete(items[0])).toBe(true);
+  expect(map.get(items[0])).toBeUndefined();
+
+  // Clear the map.
+  map.clear();
+  expect(map.size).toBe(0);
+});
+
+test("MapWithKeyFn duplicate keys handling", () => {
+  type User = { id: number; username: string };
+  const keyFn = (user: User) => user.id.toString();
+
+  // Two separate objects with the same id should be treated as the same key.
+  const user1: User = { id: 1, username: "alice" };
+  const userDuplicate: User = { id: 1, username: "aliceClone" };
+  const user2: User = { id: 2, username: "bob" };
+
+  const map = new Lang.MapWithKeyFn<User, string>([], keyFn);
+  map.set(user1, "first");
+  // Setting a duplicate should overwrite the previous value.
+  map.set(userDuplicate, "updated");
+
+  expect(map.get(user1)).toBe("updated");
+  expect(map.get(userDuplicate)).toBe("updated");
+  expect(map.has(user1)).toBe(true);
+
+  // Insert another distinct element.
+  map.set(user2, "second");
+  expect(map.get(user2)).toBe("second");
+
+  // Confirm iteration reflects unique keys.
+  const entries = [...map.entries()];
+  expect(entries.length).toBe(2);
+});
