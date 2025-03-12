@@ -613,8 +613,6 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
         }
       }
     }
-    console.log(matched);
-    console.log(this.data.map((d) => this.keyfn(d)));
     return [...matched].map((i) => this.data[i]);
   }
 }
