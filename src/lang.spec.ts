@@ -706,4 +706,71 @@ describe("Lang.InvertedIndexMap", () => {
     expect(age40Results.length).toBe(50);
     expect(peopleIndex.size).toBe(100);
   });
+
+  test("should return undefined for non-existent keys", () => {
+    const alice: Person = { id: "p1", name: "Alice", age: 30 };
+    peopleIndex.add(alice);
+
+    expect(peopleIndex.get("nonexistent")).toBeUndefined();
+  });
+
+  test("should ignore undefined values in query", () => {
+    const alice: Person = { id: "p1", name: "Alice", age: 30 };
+    const bob: Person = { id: "p2", name: "Bob", age: 25 };
+    peopleIndex.add(alice);
+    peopleIndex.add(bob);
+
+    // Query with undefined field should ignore that field
+    const result = peopleIndex.query({ name: "Alice", age: undefined });
+    expect(result).toEqual([alice]);
+  });
+
+  test("should handle multiple fields with same value", () => {
+    const alice1: Person = { id: "p1", name: "Alice", age: 30 };
+    const alice2: Person = { id: "p2", name: "Alice", age: 30 };
+    const bob: Person = { id: "p3", name: "Bob", age: 30 };
+
+    peopleIndex.add(alice1);
+    peopleIndex.add(alice2);
+    peopleIndex.add(bob);
+
+    const result = peopleIndex.query({ name: "Alice", age: 30 });
+    expect(result.sort((a, b) => a.id.localeCompare(b.id))).toEqual(
+      [alice1, alice2].sort((a, b) => a.id.localeCompare(b.id)),
+    );
+  });
+
+  test("should maintain index integrity with multiple add/remove operations", () => {
+    const alice: Person = { id: "p1", name: "Alice", age: 30 };
+    const bob: Person = { id: "p2", name: "Bob", age: 25 };
+
+    peopleIndex.add(alice);
+    peopleIndex.add(bob);
+    peopleIndex.add({ ...alice, age: 31 }); // Update alice
+    peopleIndex.add({ ...bob, name: "Bobby" }); // Update bob
+
+    expect(peopleIndex.query({ age: 30 })).toEqual([]);
+    expect(peopleIndex.query({ age: 31 })).toEqual([{ ...alice, age: 31 }]);
+    expect(peopleIndex.query({ name: "Bob" })).toEqual([]);
+    expect(peopleIndex.query({ name: "Bobby" })).toEqual([
+      { ...bob, name: "Bobby" },
+    ]);
+  });
+
+  test("should handle field values changing between numeric and string types", () => {
+    interface FlexibleRecord {
+      id: string;
+      value: string | number;
+    }
+
+    const flexIndex = new Lang.InvertedIndexMap<FlexibleRecord>((r) => r.id);
+
+    const record = { id: "r1", value: "123" };
+    flexIndex.add(record);
+    expect(flexIndex.query({ value: "123" })).toEqual([record]);
+
+    const updated = { id: "r1", value: 123 };
+    flexIndex.add(updated);
+    expect(flexIndex.query({ value: 123 })).toEqual([updated]);
+  });
 });

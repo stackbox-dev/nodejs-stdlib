@@ -587,6 +587,9 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
     const matched = new Set<number>();
     let first = true;
     for (const [qk, qv] of qentries) {
+      if (qv === undefined) {
+        continue;
+      }
       const idx = this.invIdxes[qk];
       if (!idx) {
         // unknown field
