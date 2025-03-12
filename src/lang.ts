@@ -495,3 +495,123 @@ export class MultiLevelMap<T> {
     return true;
   }
 }
+
+/**
+ * The `InvertedIndexMap` class stores records of type `R` and allows quick lookups by a primary key and
+ * by any other fields in the record. You supply a function that extracts the primary key from each record,
+ * and then you can:
+ *
+ * 1. Add new records by calling `add(record)`.
+ * 2. Retrieve a record by its primary key with `get(key)`.
+ * 3. Use `query(partialRecord)` to find all records that match the specified field-value pairs.
+ *
+ * Example usage:
+ *
+ * ```ts
+ * interface Person {
+ *   id: string;
+ *   name: string;
+ *   age: number;
+ * }
+ *
+ * // Create an index using the 'id' field as the primary key
+ * const peopleIndex = new InvertedIndexMap<Person>((r) => r.id);
+ *
+ * // Add some records
+ * peopleIndex.add({ id: "p1", name: "Alice", age: 30 });
+ * peopleIndex.add({ id: "p2", name: "Bob", age: 25 });
+ *
+ * // Retrieve by primary key
+ * const person = peopleIndex.get("p1");
+ *
+ * // Query by other fields
+ * const results = peopleIndex.query({ age: 25 });
+ * ```
+ */
+export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
+  private primaryIdx = new Map<string, number>();
+  private data: R[] = [];
+  private invIdxes: Record<string, Map<unknown, Set<number>>> = {};
+
+  constructor(
+    private keyfn: (r: R) => string,
+    private fieldsToIdx?: (keyof R)[],
+  ) {}
+
+  get(key: string): R | undefined {
+    const i = this.primaryIdx.get(key);
+    return i != null ? this.data[i] : undefined;
+  }
+
+  get size(): number {
+    return this.data.length;
+  }
+
+  add(record: R) {
+    const key = this.keyfn(record);
+    let i = this.primaryIdx.get(key);
+    if (i != null) {
+      const exstRecord = this.data[i];
+      for (const [k, v] of Object.entries(exstRecord)) {
+        if (this.fieldsToIdx && !this.fieldsToIdx.includes(k as keyof R)) {
+          continue;
+        }
+        const idx = this.invIdxes[k];
+        idx.get(v)?.delete(i);
+      }
+    } else {
+      i = this.data.length;
+      this.primaryIdx.set(key, i);
+    }
+
+    this.data[i] = record;
+    for (const [k, v] of Object.entries(record)) {
+      if (!this.invIdxes[k]) {
+        this.invIdxes[k] = new Map();
+      }
+      const idx = this.invIdxes[k];
+      if (!idx.has(v)) {
+        idx.set(v, new Set());
+      }
+      idx.get(v)?.add(i);
+    }
+  }
+
+  query(q: Partial<R>): R[] {
+    const qentries = Object.entries(q);
+    if (qentries.length === 0) {
+      // fast path
+      return this.data;
+    }
+
+    const matched = new Set<number>();
+    let first = true;
+    for (const [qk, qv] of qentries) {
+      const idx = this.invIdxes[qk];
+      if (!idx) {
+        // unknown field
+        return [];
+      }
+      const valset = idx.get(qv);
+      if (!valset || valset.size === 0) {
+        // no match
+        return [];
+      }
+      if (first) {
+        for (const i of valset) {
+          matched.add(i);
+        }
+        first = false;
+      } else {
+        for (const i of matched) {
+          if (!valset.has(i)) {
+            matched.delete(i);
+          }
+        }
+      }
+    }
+    console.log(matched);
+    console.log(this.data.map((d) => this.keyfn(d)));
+    return [...matched].map((i) => this.data[i]);
+  }
+}
