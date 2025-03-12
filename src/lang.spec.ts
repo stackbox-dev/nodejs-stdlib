@@ -442,3 +442,65 @@ test("MapWithKeyFn duplicate keys handling", () => {
   const entries = [...map.entries()];
   expect(entries.length).toBe(2);
 });
+describe("MultiLevelMap query complex cases", () => {
+  let mlm: Lang.MultiLevelMap<number>;
+
+  beforeEach(() => {
+    mlm = new Lang.MultiLevelMap<number>();
+    // Set up a more complex nested data structure.
+    mlm.set(["a", "b", "c", "d"], 1);
+    mlm.set(["a", "b", "c", "e"], 2);
+    mlm.set(["a", "b", "x", "y"], 3);
+    mlm.set(["a", "z", "c", "d"], 4);
+    mlm.set(["m", "n", "o"], 5);
+    mlm.set(["m", "n", "p"], 6);
+    mlm.set(["x", "y", "z"], 7);
+    mlm.set(["x", "y", "w"], 8);
+  });
+
+  it("should return all items matching deep levels with mixed wildcards", () => {
+    // Query pattern: first key "a", second key "b", wildcard at third, specific at fourth "d"
+    // Expected to match: ["a", "b", "c", "d"] => 1
+    const result = mlm.query(["a", "b", undefined, "d"]);
+    expect(result).toEqual([1]);
+  });
+
+  it("should return multiple items when wildcards match different sub-branches", () => {
+    // Query pattern: first key "a", wildcard for second, then "c", then wildcard.
+    // Expected to match: ["a", "b", "c", "d"] => 1, ["a", "b", "c", "e"] => 2, and ["a", "z", "c", "d"] => 4
+    const result = mlm.query(["a", undefined, "c", undefined]);
+    expect(result.sort()).toEqual([1, 2, 4].sort());
+  });
+
+  it("should return all items when wildcards are used at the beginning", () => {
+    // Query pattern: wildcard at first, then "y", then wildcard.
+    // Expected to match: ["x", "y", "z"] => 7 and ["x", "y", "w"] => 8
+    const result = mlm.query([undefined, "y", undefined]);
+    expect(result.sort()).toEqual([7, 8].sort());
+  });
+
+  it("should return only the branch specific items when no wildcards are used", () => {
+    // Query exact match: ["m", "n", "o"]
+    const result = mlm.query(["m", "n", "o"]);
+    expect(result).toEqual([5]);
+  });
+
+  it("should return empty array if the query pattern does not match any branch", () => {
+    // Query pattern that does not exist.
+    const result = mlm.query(["a", "b", "nonexistent", undefined]);
+    expect(result).toEqual([]);
+  });
+
+  it("should handle queries longer than the depth of the map gracefully", () => {
+    // Query with extra undefined levels should return empty.
+    const result = mlm.query(["m", "n", "o", undefined]);
+    expect(result).toEqual([]);
+  });
+
+  it("should return all items when querying with all wildcards in a deeper map", () => {
+    // Query with all wildcards and longer depth.
+    const result = mlm.query([undefined, undefined, undefined, undefined]);
+    expect(result.sort()).toEqual([1, 2, 3, 4].sort());
+    // Note: items with depth less than 4 (5,6,7,8) are not included.
+  });
+});

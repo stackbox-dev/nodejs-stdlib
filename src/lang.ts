@@ -339,6 +339,21 @@ class Node<T> {
   children = new Map<string, Node<T>>();
 }
 
+/**
+ * Represents a hierarchical map data structure backed by a tree of nodes.
+ *
+ * The internal data is stored as a tree where:
+ * - The root node is an instance of an internal Node<T> class.
+ * - Each Node<T> holds:
+ *   - An optional value of type T.
+ *   - A Map of children nodes keyed by strings, representing the next level in the hierarchy.
+ *
+ * As keys are provided in an array (e.g., ["level1", "level2", ...]), the corresponding path in the tree is
+ * traversed or dynamically created. This design allows efficient insertion, retrieval, querying (with support
+ * for wildcards using undefined), and deletion of values at various levels.
+ *
+ * @template T - The type of values stored in the MultiLevelMap.
+ */
 export class MultiLevelMap<T> {
   private root = new Node<T>();
 
@@ -381,6 +396,66 @@ export class MultiLevelMap<T> {
       for (const child of current.children.values()) {
         stack.push(child);
       }
+    }
+    return results;
+  }
+
+  /**
+   * Given an array of keys (or undefined), returns an array of values.
+   *
+   * For each defined key, it returns values corresponding to that key.
+   * For each undefined key, it returns values from all nodes at that level.
+   *
+   * For example:
+   * - Input: ["a", undefined] returns all values under the node "a" at the first level.
+   * - Input: [undefined] returns values from all top-level nodes.
+   *
+   * Example with at least three levels and second key undefined:
+   *
+   * Suppose we insert the following entries:
+   *   mlMap.set(["fruit", "apple", "red"], "Red Apple");
+   *   mlMap.set(["fruit", "orange", "red"], "Red Orange");
+   *   mlMap.set(["fruit", "apple", "green"], "Green Apple");
+   *   mlMap.set(["vegetable", "leafy", "spinach"], "Spinach");
+   *
+   * Then:
+   *   mlMap.query(["fruit", undefined, "red"])
+   * will return:
+   *   ["Red Apple", "Red Orange"]
+   */
+  query(keys: (string | undefined)[]): T[] {
+    let currentLevel = [this.root];
+
+    // Traverse levels
+    for (const key of keys) {
+      const nextLevel: Node<T>[] = [];
+      if (key === undefined) {
+        // Include all children
+        for (const node of currentLevel) {
+          nextLevel.push(...node.children.values());
+        }
+      } else {
+        // Only children matching the key
+        for (const node of currentLevel) {
+          const child = node.children.get(key);
+          if (child) {
+            nextLevel.push(child);
+          }
+        }
+      }
+      if (nextLevel.length === 0) return [];
+      currentLevel = nextLevel;
+    }
+
+    // Gather all descendants
+    const stack = [...currentLevel];
+    const results: T[] = [];
+    while (stack.length) {
+      const node = stack.pop()!;
+      if (node.value !== undefined) {
+        results.push(node.value);
+      }
+      stack.push(...node.children.values());
     }
     return results;
   }
