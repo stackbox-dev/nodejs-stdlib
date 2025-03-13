@@ -557,13 +557,22 @@ const EmptySet: IndexSet = {
 export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
   private primaryIdx = new Map<string, number>();
   private data: R[] = [];
-  private invIdxes: Record<string, Map<unknown, Set<number>>> = {};
-  private fieldOrder: string[] = [];
+  private invIdxes: Partial<Record<keyof R, Map<R[keyof R], Set<number>>>> = {};
+  private fieldOrderStale = true;
+  private fieldOrder: { field: keyof R; score: number }[] = [];
 
   constructor(
     private keyfn: (r: R) => string,
-    private fieldsToIdx?: Set<keyof R>,
-  ) {}
+    fieldsToIdx: (keyof R)[],
+  ) {
+    for (const field of fieldsToIdx) {
+      this.invIdxes[field] = new Map();
+    }
+    this.fieldOrder = fieldsToIdx.map((f) => ({
+      field: f,
+      score: 0,
+    }));
+  }
 
   get(key: string): R | undefined {
     const i = this.primaryIdx.get(key);
@@ -588,10 +597,15 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
   }
 
   private updateFieldOrder() {
+    if (!this.fieldOrderStale) {
+      return;
+    }
+    for (const field of this.fieldOrder) {
+      field.score = this.invIdxes[field.field]?.size ?? 0;
+    }
     // Sort fields by selectivity (smaller value sets first)
-    this.fieldOrder = Object.entries(this.invIdxes)
-      .sort(([, a], [, b]) => a.size - b.size)
-      .map(([field]) => field);
+    this.fieldOrder.sort((a, b) => a.score - b.score);
+    this.fieldOrderStale = false;
   }
 
   add(record: R) {
@@ -599,11 +613,9 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
     let i = this.primaryIdx.get(key);
     if (i != null) {
       const exstRecord = this.data[i];
-      for (const [k, v] of Object.entries(exstRecord)) {
-        if (this.fieldsToIdx && !this.fieldsToIdx.has(k as keyof R)) {
-          continue;
-        }
-        const idx = this.invIdxes[k];
+      for (const { field } of this.fieldOrder) {
+        const v = exstRecord[field];
+        const idx = this.invIdxes[field]!;
         idx.get(v)?.delete(i);
       }
     } else {
@@ -612,21 +624,19 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
     }
 
     this.data[i] = record;
-    for (const [k, v] of Object.entries(record)) {
-      if (this.fieldsToIdx && !this.fieldsToIdx.has(k as keyof R)) {
-        continue;
+    for (const { field } of this.fieldOrder) {
+      const v = record[field];
+      if (!this.invIdxes[field]) {
+        this.invIdxes[field] = new Map();
       }
-      if (!this.invIdxes[k]) {
-        this.invIdxes[k] = new Map();
-      }
-      const idx = this.invIdxes[k];
+      const idx = this.invIdxes[field]!;
       if (!idx.has(v)) {
         idx.set(v, new Set());
       }
       idx.get(v)?.add(i);
     }
 
-    this.fieldOrder.length = 0;
+    this.fieldOrderStale = true;
   }
 
   /**
@@ -658,40 +668,39 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
    * - Performance is optimized using field ordering for multiple field queries
    */
   queryIndexSet(q: Partial<R>): IndexSet {
-    const fields = Object.keys(q);
+    const qfields = Object.keys(q) as (keyof R)[];
 
     // Fast path for empty queries
-    if (fields.length === 0) {
+    if (qfields.length === 0) {
       return this.allIndexSet();
     }
 
     // Fast path for single field queries
-    if (fields.length === 1) {
-      const field = fields[0];
-      if (this.fieldsToIdx && !this.fieldsToIdx.has(field as keyof R)) {
+    if (qfields.length === 1) {
+      const qfield = qfields[0];
+      if (!this.invIdxes[qfield]) {
         return this.allIndexSet();
       }
-      const value = q[field as keyof R];
-      return this.invIdxes[field]?.get(value) ?? EmptySet;
+      const qv = q[qfield];
+      if (qv === undefined) {
+        return this.allIndexSet();
+      }
+      return this.invIdxes[qfield]!.get(qv) ?? EmptySet;
     }
 
     // Multiple fields - use existing logic
     const matched = new Set<number>();
     let first = true;
 
-    // update field order if needed to optimize performance
-    if (this.fieldOrder.length === 0) {
-      this.updateFieldOrder();
-    }
-
-    for (const field of this.fieldOrder) {
-      const qv = q[field as keyof R];
+    this.updateFieldOrder();
+    for (const { field } of this.fieldOrder) {
+      const qv = q[field];
       if (qv === undefined) {
         // ignore undefined fields in query
         continue;
       }
 
-      const idx = this.invIdxes[field];
+      const idx = this.invIdxes[field]!;
       const valset = idx.get(qv);
       if (!valset || valset.size === 0) {
         return EmptySet;

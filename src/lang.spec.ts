@@ -534,7 +534,10 @@ describe("Lang.InvertedIndexMap", () => {
   let peopleIndex: Lang.InvertedIndexMap<Person>;
 
   beforeEach(() => {
-    peopleIndex = new Lang.InvertedIndexMap<Person>((r) => r.id);
+    peopleIndex = new Lang.InvertedIndexMap<Person>(
+      (r) => r.id,
+      ["name", "age"],
+    );
   });
 
   test("should add and retrieve records by primary key", () => {
@@ -619,9 +622,9 @@ describe("Lang.InvertedIndexMap", () => {
     const alice: Person = { id: "p1", name: "Alice", age: 30 };
     peopleIndex.add(alice);
 
-    // Since "unknown" is not a field in the record, query should return empty.
+    // Query with an unknown field should be ignored
     const result = peopleIndex.query({ unknown: "value" } as any);
-    expect(result).toEqual([]);
+    expect(result).toEqual([alice]);
   });
 
   test("should handle updates of indexed fields correctly", () => {
@@ -762,7 +765,10 @@ describe("Lang.InvertedIndexMap", () => {
       value: string | number;
     }
 
-    const flexIndex = new Lang.InvertedIndexMap<FlexibleRecord>((r) => r.id);
+    const flexIndex = new Lang.InvertedIndexMap<FlexibleRecord>(
+      (r) => r.id,
+      ["value"],
+    );
 
     const record = { id: "r1", value: "123" };
     flexIndex.add(record);
@@ -784,7 +790,7 @@ describe("Lang.InvertedIndexMap", () => {
     // Only index category and price fields
     const idx = new Lang.InvertedIndexMap<Product>(
       (r) => r.id,
-      new Set(["category", "price"]),
+      ["category", "price"],
     );
 
     const products = [
@@ -834,7 +840,10 @@ describe("Lang.InvertedIndexMap", () => {
       active: boolean;
     }
 
-    const idx = new Lang.InvertedIndexMap<User>((r) => r.id);
+    const idx = new Lang.InvertedIndexMap<User>(
+      (r) => r.id,
+      ["role", "active"],
+    );
 
     // Add initial users
     const users = [
@@ -871,7 +880,10 @@ describe("Lang.InvertedIndexMap", () => {
       value: number;
     }
 
-    const idx = new Lang.InvertedIndexMap<Record>((r) => r.id);
+    const idx = new Lang.InvertedIndexMap<Record>(
+      (r) => r.id,
+      ["type", "value"],
+    );
     const types = ["A", "B", "C", "D"];
     const values = [10, 20, 30, 40, 50];
 
@@ -910,7 +922,7 @@ describe("Lang.InvertedIndexMap", () => {
 
     const productsIndex = new Lang.InvertedIndexMap<Product>(
       (r) => r.id,
-      new Set(["category", "price"]), // Only index category and price
+      ["category", "price"], // Only index category and price
     );
 
     const products = [
