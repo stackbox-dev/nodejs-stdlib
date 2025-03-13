@@ -497,6 +497,32 @@ export class MultiLevelMap<T> {
 }
 
 /**
+ * Represents a set of numeric indices.
+ *
+ * @interface IndexSet
+ *
+ * @property {number} size - The number of indices in the set.
+ *
+ * @method has - Checks if a specific index exists in the set.
+ * @param {number} index - The index to check.
+ * @returns {boolean} True if the index exists in the set, false otherwise.
+ *
+ * @method [Symbol.iterator] - Makes the set iterable.
+ * @returns {IterableIterator<number>} An iterator that yields the indices in the set.
+ */
+export interface IndexSet {
+  has(index: number): boolean;
+  size: number;
+  [Symbol.iterator](): IterableIterator<number>;
+}
+
+const EmptySet: IndexSet = {
+  has: () => false,
+  size: 0,
+  [Symbol.iterator]: function* () {},
+};
+
+/**
  * The `InvertedIndexMap` class stores records of type `R` and allows quick lookups by a primary key and
  * by any other fields in the record. You supply a function that extracts the primary key from each record,
  * and then you can:
@@ -532,10 +558,11 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
   private primaryIdx = new Map<string, number>();
   private data: R[] = [];
   private invIdxes: Record<string, Map<unknown, Set<number>>> = {};
+  private fieldOrder: string[] = [];
 
   constructor(
     private keyfn: (r: R) => string,
-    private fieldsToIdx?: (keyof R)[],
+    private fieldsToIdx?: Set<keyof R>,
   ) {}
 
   get(key: string): R | undefined {
@@ -547,13 +574,33 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
     return this.data.length;
   }
 
+  private allIndexSet(): IndexSet {
+    const data = this.data;
+    return {
+      has: (index) => index < this.data.length,
+      size: data.length,
+      [Symbol.iterator]: function* () {
+        for (let i = 0; i < data.length; i++) {
+          yield i;
+        }
+      },
+    };
+  }
+
+  private updateFieldOrder() {
+    // Sort fields by selectivity (smaller value sets first)
+    this.fieldOrder = Object.entries(this.invIdxes)
+      .sort(([, a], [, b]) => a.size - b.size)
+      .map(([field]) => field);
+  }
+
   add(record: R) {
     const key = this.keyfn(record);
     let i = this.primaryIdx.get(key);
     if (i != null) {
       const exstRecord = this.data[i];
       for (const [k, v] of Object.entries(exstRecord)) {
-        if (this.fieldsToIdx && !this.fieldsToIdx.includes(k as keyof R)) {
+        if (this.fieldsToIdx && !this.fieldsToIdx.has(k as keyof R)) {
           continue;
         }
         const idx = this.invIdxes[k];
@@ -566,6 +613,9 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
 
     this.data[i] = record;
     for (const [k, v] of Object.entries(record)) {
+      if (this.fieldsToIdx && !this.fieldsToIdx.has(k as keyof R)) {
+        continue;
+      }
       if (!this.invIdxes[k]) {
         this.invIdxes[k] = new Map();
       }
@@ -575,31 +625,78 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
       }
       idx.get(v)?.add(i);
     }
+
+    this.fieldOrder.length = 0;
   }
 
-  query(q: Partial<R>): R[] {
-    const qentries = Object.entries(q);
-    if (qentries.length === 0) {
-      // fast path
-      return this.data;
+  /**
+   * Retrieves an IndexSet based on a partial record query.
+   *
+   * This method performs optimized index lookups based on query complexity:
+   * - Empty queries return an IndexSet covering all records
+   * - Single field queries use direct index lookup
+   * - Multiple field queries use field order optimization and set intersection
+   *
+   * @param q - Partial record containing field values to query
+   * @returns {IndexSet} An IndexSet containing indexes of matching records with:
+   *   - has(index): Method to check if an index exists in the set
+   *   - size: Number of matching indexes
+   *   - [Symbol.iterator]: Iterator to traverse matching indexes
+   *
+   * @example
+   * ```ts
+   * // Single field query
+   * queryIndexSet({ name: "John" })
+   *
+   * // Multiple field query
+   * queryIndexSet({ name: "John", age: 30 })
+   * ```
+   *
+   * @remarks
+   * - Returns EmptySet if no matches found
+   * - Undefined query values are ignored
+   * - Performance is optimized using field ordering for multiple field queries
+   */
+  queryIndexSet(q: Partial<R>): IndexSet {
+    const fields = Object.keys(q);
+
+    // Fast path for empty queries
+    if (fields.length === 0) {
+      return this.allIndexSet();
     }
 
+    // Fast path for single field queries
+    if (fields.length === 1) {
+      const field = fields[0];
+      if (this.fieldsToIdx && !this.fieldsToIdx.has(field as keyof R)) {
+        return this.allIndexSet();
+      }
+      const value = q[field as keyof R];
+      return this.invIdxes[field]?.get(value) ?? EmptySet;
+    }
+
+    // Multiple fields - use existing logic
     const matched = new Set<number>();
     let first = true;
-    for (const [qk, qv] of qentries) {
+
+    // update field order if needed to optimize performance
+    if (this.fieldOrder.length === 0) {
+      this.updateFieldOrder();
+    }
+
+    for (const field of this.fieldOrder) {
+      const qv = q[field as keyof R];
       if (qv === undefined) {
+        // ignore undefined fields in query
         continue;
       }
-      const idx = this.invIdxes[qk];
-      if (!idx) {
-        // unknown field
-        return [];
-      }
+
+      const idx = this.invIdxes[field];
       const valset = idx.get(qv);
       if (!valset || valset.size === 0) {
-        // no match
-        return [];
+        return EmptySet;
       }
+
       if (first) {
         for (const i of valset) {
           matched.add(i);
@@ -613,6 +710,21 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
         }
       }
     }
-    return [...matched].map((i) => this.data[i]);
+    return matched;
+  }
+
+  query(q: Partial<R>): R[] {
+    const matched = this.queryIndexSet(q);
+    if (matched.size === 0) {
+      return [];
+    }
+    if (matched.size === this.data.length) {
+      return this.data;
+    }
+    const output: R[] = [];
+    for (const i of matched) {
+      output.push(this.data[i]);
+    }
+    return output;
   }
 }

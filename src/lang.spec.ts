@@ -571,7 +571,6 @@ describe("Lang.InvertedIndexMap", () => {
 
     // Query people with age 30
     const result = peopleIndex.query({ age: 30 });
-    console.log(result);
     expect(result.sort((a, b) => a.id.localeCompare(b.id))).toEqual(
       [alice, charlie].sort((a, b) => a.id.localeCompare(b.id)),
     );
@@ -772,5 +771,204 @@ describe("Lang.InvertedIndexMap", () => {
     const updated = { id: "r1", value: 123 };
     flexIndex.add(updated);
     expect(flexIndex.query({ value: 123 })).toEqual([updated]);
+  });
+
+  test("queryIndexSet behavior with filtered fields", () => {
+    interface Product {
+      id: string;
+      category: string;
+      price: number;
+      stock: number;
+    }
+
+    // Only index category and price fields
+    const idx = new Lang.InvertedIndexMap<Product>(
+      (r) => r.id,
+      new Set(["category", "price"]),
+    );
+
+    const products = [
+      { id: "p1", category: "electronics", price: 100, stock: 5 },
+      { id: "p2", category: "books", price: 20, stock: 10 },
+      { id: "p3", category: "electronics", price: 200, stock: 3 },
+      { id: "p4", category: "books", price: 15, stock: 8 },
+    ];
+
+    products.forEach((p) => idx.add(p));
+
+    // Test querying indexed fields
+    const electronicsSet = idx.queryIndexSet({ category: "electronics" });
+    expect(electronicsSet.size).toBe(2);
+    expect([...electronicsSet].map((i) => products[i].id).sort()).toEqual(
+      ["p1", "p3"].sort(),
+    );
+
+    // Test querying unindexed fields (should return empty set)
+    const stockSet = idx.queryIndexSet({ stock: 5 });
+    expect(stockSet.size).toBe(4);
+
+    // Test querying combination of indexed and unindexed fields (unindexed fields are ignored)
+    const mixedSet = idx.queryIndexSet({ category: "books", stock: 10 });
+    expect(mixedSet.size).toBe(2); // Should match p2 and p4 as they are in "books" category
+
+    // Test querying empty object returns set of all indices
+    const allSet = idx.queryIndexSet({});
+    expect(allSet.size).toBe(4);
+
+    // Test querying non-existent values
+    const emptySet = idx.queryIndexSet({ category: "nonexistent" });
+    expect(emptySet.size).toBe(0);
+
+    // Test querying multiple indexed fields
+    const booksUnder20Set = idx.queryIndexSet({
+      category: "books",
+      price: 15,
+    });
+    expect([...booksUnder20Set].map((i) => products[i].id)).toEqual(["p4"]);
+  });
+
+  test("queryIndexSet handles updates correctly", () => {
+    interface User {
+      id: string;
+      role: string;
+      active: boolean;
+    }
+
+    const idx = new Lang.InvertedIndexMap<User>((r) => r.id);
+
+    // Add initial users
+    const users = [
+      { id: "u1", role: "admin", active: true },
+      { id: "u2", role: "user", active: true },
+      { id: "u3", role: "user", active: false },
+    ];
+
+    users.forEach((u) => idx.add(u));
+
+    // Initial queries
+    let activeUsers = idx.queryIndexSet({ active: true });
+    expect(activeUsers.size).toBe(2);
+
+    // Update a user
+    idx.add({ id: "u2", role: "admin", active: false });
+
+    // Check updated queries
+    activeUsers = idx.queryIndexSet({ active: true });
+    expect(activeUsers.size).toBe(1);
+
+    const adminUsers = idx.queryIndexSet({ role: "admin" });
+    expect(adminUsers.size).toBe(2);
+
+    // Test combined queries after update
+    const activeAdmins = idx.queryIndexSet({ role: "admin", active: true });
+    expect(activeAdmins.size).toBe(1);
+  });
+
+  test("queryIndexSet performance with large datasets", () => {
+    interface Record {
+      id: string;
+      type: string;
+      value: number;
+    }
+
+    const idx = new Lang.InvertedIndexMap<Record>((r) => r.id);
+    const types = ["A", "B", "C", "D"];
+    const values = [10, 20, 30, 40, 50];
+
+    // Add 1000 records
+    for (let i = 0; i < 1000; i++) {
+      idx.add({
+        id: `r${i}`,
+        type: types[i % types.length],
+        value: values[i % values.length],
+      });
+    }
+
+    // Measure time for single field query
+    const start1 = performance.now();
+    const typeASet = idx.queryIndexSet({ type: "A" });
+    const duration1 = performance.now() - start1;
+    expect(typeASet.size).toBe(250); // 1000/4 records
+    expect(duration1).toBeLessThan(50); // Should be fast
+
+    // Measure time for multiple field query
+    const start2 = performance.now();
+    const typeAValue10Set = idx.queryIndexSet({ type: "A", value: 10 });
+    const duration2 = performance.now() - start2;
+    expect(typeAValue10Set.size).toBe(50); // 250/5 records
+    expect(duration2).toBeLessThan(50); // Should still be fast
+  });
+
+  test("query respects fieldsToIdx constructor parameter", () => {
+    interface Product {
+      id: string;
+      name: string;
+      category: string;
+      price: number;
+      inStock: boolean;
+    }
+
+    const productsIndex = new Lang.InvertedIndexMap<Product>(
+      (r) => r.id,
+      new Set(["category", "price"]), // Only index category and price
+    );
+
+    const products = [
+      {
+        id: "p1",
+        name: "Laptop",
+        category: "electronics",
+        price: 999,
+        inStock: true,
+      },
+      {
+        id: "p2",
+        name: "Phone",
+        category: "electronics",
+        price: 599,
+        inStock: false,
+      },
+      { id: "p3", name: "Book", category: "books", price: 29, inStock: true },
+      {
+        id: "p4",
+        name: "Tablet",
+        category: "electronics",
+        price: 399,
+        inStock: true,
+      },
+    ];
+
+    products.forEach((p) => productsIndex.add(p));
+
+    // Should work for indexed fields
+    expect(productsIndex.query({ category: "electronics" }).length).toBe(3);
+    expect(productsIndex.query({ price: 599 }).length).toBe(1);
+    expect(
+      productsIndex.query({ category: "electronics", price: 999 }).length,
+    ).toBe(1);
+
+    // Should ignore non-indexed fields
+    expect(productsIndex.query({ name: "Laptop" }).length).toBe(4);
+    expect(productsIndex.query({ inStock: true }).length).toBe(4);
+
+    // Should ignore non-indexed fields when combined with indexed fields
+    expect(
+      productsIndex.query({ category: "electronics", name: "Laptop" }).length,
+    ).toBe(3);
+    expect(productsIndex.query({ price: 599, inStock: false }).length).toBe(1);
+
+    // Should handle updates correctly for indexed fields
+    productsIndex.add({
+      id: "p2",
+      name: "Phone Updated",
+      category: "accessories",
+      price: 499,
+      inStock: true,
+    });
+
+    expect(productsIndex.query({ category: "electronics" }).length).toBe(2);
+    expect(productsIndex.query({ category: "accessories" }).length).toBe(1);
+    expect(productsIndex.query({ price: 599 }).length).toBe(0);
+    expect(productsIndex.query({ price: 499 }).length).toBe(1);
   });
 });
