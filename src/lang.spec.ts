@@ -229,6 +229,121 @@ describe("Lang.*", () => {
     expect(Lang.minBy(nanArr, (x) => x.value)).toEqual({ value: NaN });
     expect(Lang.maxBy(nanArr, (x) => x.value)).toEqual({ value: NaN });
   });
+
+  describe("intersectSorted function", () => {
+    test("basic intersection cases", () => {
+      expect(Lang.intersectSorted([1, 2, 3, 4], [2, 4, 6, 8])).toEqual([2, 4]);
+      expect(Lang.intersectSorted([1, 2, 3], [4, 5, 6])).toEqual([]);
+      expect(Lang.intersectSorted([1, 1, 2, 3], [1, 2, 2, 3])).toEqual([
+        1, 2, 3,
+      ]);
+    });
+
+    test("edge cases", () => {
+      // Empty arrays
+      expect(Lang.intersectSorted([], [])).toEqual([]);
+      expect(Lang.intersectSorted([1, 2, 3], [])).toEqual([]);
+      expect(Lang.intersectSorted([], [1, 2, 3])).toEqual([]);
+
+      // Single element arrays
+      expect(Lang.intersectSorted([1], [1])).toEqual([1]);
+      expect(Lang.intersectSorted([1], [2])).toEqual([]);
+
+      // Arrays of different lengths
+      expect(Lang.intersectSorted([1, 2, 3], [2])).toEqual([2]);
+      expect(Lang.intersectSorted([2], [1, 2, 3])).toEqual([2]);
+    });
+
+    test("large arrays", () => {
+      const arr1 = Array.from({ length: 1000 }, (_, i) => i * 2); // [0,2,4,...,1998]
+      const arr2 = Array.from({ length: 500 }, (_, i) => i * 4); // [0,4,8,...,1996]
+      expect(Lang.intersectSorted(arr1, arr2)).toEqual(arr2);
+    });
+
+    test("negative numbers", () => {
+      expect(Lang.intersectSorted([-3, -2, -1, 0], [-2, 0, 2])).toEqual([
+        -2, 0,
+      ]);
+      expect(Lang.intersectSorted([-1, 0, 1], [-2, -1, 0])).toEqual([-1, 0]);
+    });
+
+    test("maintains order", () => {
+      const result = Lang.intersectSorted([1, 3, 5, 7], [2, 3, 5, 8]);
+      expect(result).toEqual([3, 5]); // Order preserved
+    });
+  });
+
+  describe("sortedArrToIndexSet", () => {
+    test("empty array returns empty index set", () => {
+      const set = Lang.sortedArrToIndexSet([]);
+      expect(set.size).toBe(0);
+      expect(set.has(0)).toBe(false);
+      expect([...set]).toEqual([]);
+    });
+
+    test("single element array", () => {
+      const set = Lang.sortedArrToIndexSet([5]);
+      expect(set.size).toBe(1);
+      expect(set.has(5)).toBe(true);
+      expect(set.has(4)).toBe(false);
+      expect([...set]).toEqual([5]);
+    });
+
+    test("multiple elements", () => {
+      const set = Lang.sortedArrToIndexSet([1, 3, 5, 7, 9]);
+      expect(set.size).toBe(5);
+      expect(set.has(3)).toBe(true);
+      expect(set.has(4)).toBe(false);
+      expect(set.has(9)).toBe(true);
+      expect([...set]).toEqual([1, 3, 5, 7, 9]);
+    });
+
+    test("binary search behavior", () => {
+      const set = Lang.sortedArrToIndexSet([10, 20, 30, 40, 50]);
+
+      // Test boundaries
+      expect(set.has(10)).toBe(true);
+      expect(set.has(50)).toBe(true);
+
+      // Test middle
+      expect(set.has(30)).toBe(true);
+
+      // Test non-existent values
+      expect(set.has(15)).toBe(false);
+      expect(set.has(45)).toBe(false);
+      expect(set.has(0)).toBe(false);
+      expect(set.has(60)).toBe(false);
+    });
+
+    test("large sorted array", () => {
+      const nums = Array.from({ length: 1000 }, (_, i) => i * 2); // [0,2,4,...,1998]
+      const set = Lang.sortedArrToIndexSet(nums);
+
+      expect(set.size).toBe(1000);
+      expect(set.has(0)).toBe(true);
+      expect(set.has(1998)).toBe(true);
+      expect(set.has(1000)).toBe(true);
+      expect(set.has(1)).toBe(false);
+      expect(set.has(1999)).toBe(false);
+    });
+
+    test("negative numbers", () => {
+      const set = Lang.sortedArrToIndexSet([-5, -3, -1, 0, 2, 4]);
+      expect(set.size).toBe(6);
+      expect(set.has(-5)).toBe(true);
+      expect(set.has(-3)).toBe(true);
+      expect(set.has(0)).toBe(true);
+      expect(set.has(4)).toBe(true);
+      expect(set.has(-4)).toBe(false);
+      expect(set.has(1)).toBe(false);
+    });
+
+    test("iteration order matches input array", () => {
+      const nums = [1, 5, 10, 15, 20];
+      const set = Lang.sortedArrToIndexSet(nums);
+      expect([...set]).toEqual(nums);
+    });
+  });
 });
 
 describe("Lang.MapWithKeyFn", () => {

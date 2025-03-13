@@ -523,6 +523,85 @@ const EmptySet: IndexSet = {
 };
 
 /**
+ * Converts a sorted array of numbers into an IndexSet data structure.
+ * sortedArr shouldn't have duplicate elements.
+ * The resulting set provides efficient lookup operations using binary search.
+ *
+ * @param sortedArr - An array of numbers in ascending order
+ * @returns An IndexSet object with the following properties:
+ *  - `has(index)`: A method that checks if a number exists in the set using binary search (O(log n))
+ *  - `size`: The number of elements in the set
+ *  - `[Symbol.iterator]`: Makes the set iterable, returning the original sorted array iterator
+ *
+ * @example
+ * ```typescript
+ * const set = sortedArrToIndexSet([1, 2, 3, 4, 5]);
+ * console.log(set.has(3)); // true
+ * console.log(set.has(6)); // false
+ * console.log(set.size); // 5
+ * for (const num of set) {
+ *   console.log(num); // prints 1, 2, 3, 4, 5
+ * }
+ * ```
+ */
+export function sortedArrToIndexSet(sortedArr: number[]): IndexSet {
+  return {
+    has: (index: number) => {
+      let left = 0;
+      let right = sortedArr.length - 1;
+      while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        if (sortedArr[mid] === index) return true;
+        if (sortedArr[mid] < index) {
+          left = mid + 1;
+        } else {
+          right = mid - 1;
+        }
+      }
+      return false;
+    },
+    size: sortedArr.length,
+    [Symbol.iterator]: () => sortedArr[Symbol.iterator](),
+  };
+}
+
+/**
+ * Returns the intersection of two sorted arrays of numbers.
+ * The function assumes that both input arrays are sorted in ascending order.
+ * Doesn't handle duplicate elements in the input arrays.
+ * Time complexity: O(n + m) where n and m are lengths of input arrays.
+ * Space complexity: O(min(n, m)) for the result array.
+ * The result maintains the sorted order of the input arrays.
+ *
+ * @param a - First sorted array of numbers
+ * @param b - Second sorted array of numbers
+ * @returns An array containing elements that appear in both input arrays
+ *
+ * @example
+ * ```typescript
+ * intersectSorted([1, 2, 3, 4], [2, 4, 6, 8]) // returns [2, 4]
+ * intersectSorted([1, 2, 3], [4, 5, 6]) // returns []
+ * ```
+ */
+export function intersectSorted(a: number[], b: number[]): number[] {
+  const result: number[] = [];
+  let i = 0,
+    j = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) {
+      result.push(a[i]);
+      i++;
+      j++;
+    } else if (a[i] < b[j]) {
+      i++;
+    } else {
+      j++;
+    }
+  }
+  return result;
+}
+
+/**
  * The `InvertedIndexMap` class stores records of type `R` and allows quick lookups by a primary key and
  * by any other fields in the record. You supply a function that extracts the primary key from each record,
  * and then you can:
@@ -557,7 +636,7 @@ const EmptySet: IndexSet = {
 export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
   private primaryIdx = new Map<string, number>();
   private data: R[] = [];
-  private invIdxes: Partial<Record<keyof R, Map<R[keyof R], Set<number>>>> = {};
+  private invIdxes: Partial<Record<keyof R, Map<R[keyof R], number[]>>> = {};
   private fieldOrderStale = true;
   private fieldOrder: { field: keyof R; score: number }[] = [];
 
@@ -586,7 +665,7 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
   private allIndexSet(): IndexSet {
     const data = this.data;
     return {
-      has: (index) => index < this.data.length,
+      has: (index) => index < data.length,
       size: data.length,
       [Symbol.iterator]: function* () {
         for (let i = 0; i < data.length; i++) {
@@ -612,30 +691,36 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
     const key = this.keyfn(record);
     let i = this.primaryIdx.get(key);
     if (i != null) {
+      // For updates, remove the old posting for each field.
       const exstRecord = this.data[i];
       for (const { field } of this.fieldOrder) {
         const v = exstRecord[field];
         const idx = this.invIdxes[field]!;
-        idx.get(v)?.delete(i);
+        const posting = idx.get(v);
+        if (posting) {
+          // Remove i from the sorted array (linear scan)
+          const pos = posting.indexOf(i);
+          if (pos !== -1) {
+            posting.splice(pos, 1);
+          }
+        }
       }
     } else {
       i = this.data.length;
       this.primaryIdx.set(key, i);
     }
-
     this.data[i] = record;
+    // For each indexed field, add the new index.
     for (const { field } of this.fieldOrder) {
       const v = record[field];
-      if (!this.invIdxes[field]) {
-        this.invIdxes[field] = new Map();
-      }
       const idx = this.invIdxes[field]!;
       if (!idx.has(v)) {
-        idx.set(v, new Set());
+        // For new posting lists, initialize with an empty array.
+        idx.set(v, []);
       }
-      idx.get(v)?.add(i);
+      // Because indices only increase, push preserves sorted order.
+      idx.get(v)!.push(i);
     }
-
     this.fieldOrderStale = true;
   }
 
@@ -669,57 +754,42 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
    */
   queryIndexSet(q: Partial<R>): IndexSet {
     const qfields = Object.keys(q) as (keyof R)[];
-
-    // Fast path for empty queries
     if (qfields.length === 0) {
       return this.allIndexSet();
     }
-
-    // Fast path for single field queries
     if (qfields.length === 1) {
       const qfield = qfields[0];
-      if (!this.invIdxes[qfield]) {
-        return this.allIndexSet();
-      }
+      const idx = this.invIdxes[qfield];
       const qv = q[qfield];
-      if (qv === undefined) {
+      if (!idx || qv === undefined) {
         return this.allIndexSet();
       }
-      return this.invIdxes[qfield]!.get(qv) ?? EmptySet;
+      const posting = idx.get(qv);
+      return posting ? sortedArrToIndexSet(posting) : EmptySet;
     }
-
-    // Multiple fields - use existing logic
-    const matched = new Set<number>();
-    let first = true;
 
     this.updateFieldOrder();
+    let intersected: number[] | null = null;
+    // Iterate over fields in optimized order.
     for (const { field } of this.fieldOrder) {
       const qv = q[field];
-      if (qv === undefined) {
-        // ignore undefined fields in query
-        continue;
-      }
-
-      const idx = this.invIdxes[field]!;
-      const valset = idx.get(qv);
-      if (!valset || valset.size === 0) {
+      if (qv === undefined) continue;
+      const posting = this.invIdxes[field]!.get(qv);
+      if (!posting || posting.length === 0) {
         return EmptySet;
       }
-
-      if (first) {
-        for (const i of valset) {
-          matched.add(i);
-        }
-        first = false;
+      if (intersected === null) {
+        // Copy the posting array.
+        intersected = posting.slice();
       } else {
-        for (const i of matched) {
-          if (!valset.has(i)) {
-            matched.delete(i);
-          }
+        // Merge two sorted arrays.
+        intersected = intersectSorted(intersected, posting);
+        if (intersected.length === 0) {
+          return EmptySet;
         }
       }
     }
-    return matched;
+    return sortedArrToIndexSet(intersected ?? []);
   }
 
   query(q: Partial<R>): R[] {
@@ -730,9 +800,10 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
     if (matched.size === this.data.length) {
       return this.data;
     }
-    const output: R[] = [];
-    for (const i of matched) {
-      output.push(this.data[i]);
+    const output: R[] = new Array(matched.size);
+    let i = 0;
+    for (const idx of matched) {
+      output[i++] = this.data[idx];
     }
     return output;
   }
