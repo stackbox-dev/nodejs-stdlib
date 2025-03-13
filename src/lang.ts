@@ -522,6 +522,16 @@ const EmptySet: IndexSet = {
   [Symbol.iterator]: function* () {},
 };
 
+const LenIndexSet: (len: number) => IndexSet = (len) => ({
+  has: (index) => index < len,
+  size: len,
+  [Symbol.iterator]: function* () {
+    for (let i = 0; i < len; i++) {
+      yield i;
+    }
+  },
+});
+
 /**
  * Converts a sorted array of numbers into an IndexSet data structure.
  * sortedArr shouldn't have duplicate elements.
@@ -662,19 +672,6 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
     return this.data.length;
   }
 
-  private allIndexSet(): IndexSet {
-    const data = this.data;
-    return {
-      has: (index) => index < data.length,
-      size: data.length,
-      [Symbol.iterator]: function* () {
-        for (let i = 0; i < data.length; i++) {
-          yield i;
-        }
-      },
-    };
-  }
-
   private updateFieldOrder() {
     if (!this.fieldOrderStale) {
       return;
@@ -691,36 +688,43 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
     const key = this.keyfn(record);
     let i = this.primaryIdx.get(key);
     if (i != null) {
-      // For updates, remove the old posting for each field.
       const exstRecord = this.data[i];
+      // Only update indices where values have changed
       for (const { field } of this.fieldOrder) {
-        const v = exstRecord[field];
+        const oldVal = exstRecord[field];
+        const newVal = record[field];
+        if (oldVal === newVal) {
+          continue;
+        }
         const idx = this.invIdxes[field]!;
-        const posting = idx.get(v);
+        // Remove old posting
+        const posting = idx.get(oldVal);
         if (posting) {
-          // Remove i from the sorted array (linear scan)
           const pos = posting.indexOf(i);
           if (pos !== -1) {
             posting.splice(pos, 1);
           }
         }
+        // Add new posting
+        if (!idx.has(newVal)) {
+          idx.set(newVal, []);
+        }
+        idx.get(newVal)!.push(i);
       }
     } else {
       i = this.data.length;
       this.primaryIdx.set(key, i);
+      // For new records, just add to indices
+      for (const { field } of this.fieldOrder) {
+        const v = record[field];
+        const idx = this.invIdxes[field]!;
+        if (!idx.has(v)) {
+          idx.set(v, []);
+        }
+        idx.get(v)!.push(i);
+      }
     }
     this.data[i] = record;
-    // For each indexed field, add the new index.
-    for (const { field } of this.fieldOrder) {
-      const v = record[field];
-      const idx = this.invIdxes[field]!;
-      if (!idx.has(v)) {
-        // For new posting lists, initialize with an empty array.
-        idx.set(v, []);
-      }
-      // Because indices only increase, push preserves sorted order.
-      idx.get(v)!.push(i);
-    }
     this.fieldOrderStale = true;
   }
 
@@ -755,14 +759,14 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
   queryIndexSet(q: Partial<R>): IndexSet {
     const qfields = Object.keys(q) as (keyof R)[];
     if (qfields.length === 0) {
-      return this.allIndexSet();
+      return LenIndexSet(this.data.length);
     }
     if (qfields.length === 1) {
       const qfield = qfields[0];
       const idx = this.invIdxes[qfield];
       const qv = q[qfield];
       if (!idx || qv === undefined) {
-        return this.allIndexSet();
+        return LenIndexSet(this.data.length);
       }
       const posting = idx.get(qv);
       return posting ? sortedArrToIndexSet(posting) : EmptySet;
