@@ -33,7 +33,7 @@ export const roundUp = (num: number, decimals: number) =>
 export const roundDown = (num: number, decimals: number) =>
   Math.floor((num + Number.EPSILON) * 10 ** decimals) / 10 ** decimals;
 
-export const SortBy = <T>(...fns: KeyFn<T>[]): CompareFn<T> => {
+export const SortBy = <T>(...fns: ReadonlyArray<KeyFn<T>>): CompareFn<T> => {
   if (fns.length === 1) {
     const fn = fns[0];
     return (a, b) => compareWithKey(a, b, fn);
@@ -72,7 +72,7 @@ function compareWithKey<T, V = number | string>(
  * @param items
  * @returns distinct items (preserves order)
  */
-export const unique = <T>(items: T[]): T[] => {
+export const unique = <T>(items: ReadonlyArray<T>): T[] => {
   const seen = new Set<T>();
   const resp: T[] = [];
   for (const item of items) {
@@ -86,7 +86,7 @@ export const unique = <T>(items: T[]): T[] => {
 };
 
 export const uniqueBy = <T, V = string | number>(
-  items: T[],
+  items: ReadonlyArray<T>,
   fn: KeyFn<T, V>,
 ): T[] => {
   const seen = new Set<V>();
@@ -102,7 +102,7 @@ export const uniqueBy = <T, V = string | number>(
   return resp;
 };
 
-export const uniqueCount = <T>(items: T[]): number => {
+export const uniqueCount = <T>(items: ReadonlyArray<T>): number => {
   const seen = new Set<T>();
   for (const item of items) {
     if (seen.has(item)) {
@@ -113,7 +113,10 @@ export const uniqueCount = <T>(items: T[]): number => {
   return seen.size;
 };
 
-export const intersection = <T>(items1: T[], items2: T[]) => {
+export const intersection = <T>(
+  items1: ReadonlyArray<T>,
+  items2: ReadonlyArray<T>,
+) => {
   const items2Set = new Set(items2);
   const inters = new Set<T>();
   for (const s1 of items1) {
@@ -126,7 +129,9 @@ export const intersection = <T>(items1: T[], items2: T[]) => {
 
 export type IntSequence = [number, number];
 
-export const arrayToIntSequence = (arr: number[]): IntSequence[] => {
+export const arrayToIntSequence = (
+  arr: ReadonlyArray<number>,
+): IntSequence[] => {
   arr = [...arr].sort(SortBy((x) => x));
   const seqs: [number, number][] = [];
   for (const item of arr) {
@@ -141,8 +146,8 @@ export const arrayToIntSequence = (arr: number[]): IntSequence[] => {
 };
 
 export const areIntSequencesOverlapping = (
-  s1: IntSequence[],
-  s2: IntSequence[],
+  s1: ReadonlyArray<IntSequence>,
+  s2: ReadonlyArray<IntSequence>,
 ) => {
   for (const p1 of s1) {
     for (const p2 of s2) {
@@ -181,7 +186,10 @@ export const groupBy = <T, U, V = T[]>(
   return map;
 };
 
-export const setEquals = <T>(items1: T[], items2: T[]) => {
+export const setEquals = <T>(
+  items1: ReadonlyArray<T>,
+  items2: ReadonlyArray<T>,
+) => {
   for (const i1 of items1) {
     if (items2.indexOf(i1) === -1) {
       return false;
@@ -195,7 +203,10 @@ export const setEquals = <T>(items1: T[], items2: T[]) => {
   return true;
 };
 
-export const minBy = <T>(items: T[], ...fn: KeyFn<T>[]): T | null => {
+export const minBy = <T>(
+  items: ReadonlyArray<T>,
+  ...fn: ReadonlyArray<KeyFn<T>>
+): T | null => {
   let s: T | null = null;
   const comparator = SortBy(...fn);
   for (const item of items) {
@@ -206,7 +217,10 @@ export const minBy = <T>(items: T[], ...fn: KeyFn<T>[]): T | null => {
   return s;
 };
 
-export const maxBy = <T>(items: T[], ...fn: KeyFn<T>[]): T | null => {
+export const maxBy = <T>(
+  items: ReadonlyArray<T>,
+  ...fn: ReadonlyArray<KeyFn<T>>
+): T | null => {
   let s: T | null = null;
   const comparator = SortBy(...fn);
   for (const item of items) {
@@ -217,7 +231,10 @@ export const maxBy = <T>(items: T[], ...fn: KeyFn<T>[]): T | null => {
   return s;
 };
 
-export const sumBy = <T>(items: T[], fn: (x: T) => number): number => {
+export const sumBy = <T>(
+  items: ReadonlyArray<T>,
+  fn: (x: T) => number,
+): number => {
   let s = 0;
   for (const item of items) {
     s += fn(item);
@@ -225,7 +242,10 @@ export const sumBy = <T>(items: T[], fn: (x: T) => number): number => {
   return s;
 };
 
-export const countBy = <T>(items: T[], fn: (x: T) => boolean): number => {
+export const countBy = <T>(
+  items: ReadonlyArray<T>,
+  fn: (x: T) => boolean,
+): number => {
   let s = 0;
   for (const item of items) {
     if (fn(item)) {
@@ -235,7 +255,7 @@ export const countBy = <T>(items: T[], fn: (x: T) => boolean): number => {
   return s;
 };
 
-export function shuffleArray<T>(array: T[]) {
+export function shuffleArray<T>(array: ReadonlyArray<T>) {
   const output = [...array];
   for (let i = output.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -246,7 +266,7 @@ export function shuffleArray<T>(array: T[]) {
   return output;
 }
 
-export function selectRandom<T>(array: T[]) {
+export function selectRandom<T>(array: ReadonlyArray<T>) {
   const index = Math.floor(Math.random() * (array.length + 1));
   return array[Math.min(index, array.length - 1)];
 }
