@@ -813,7 +813,10 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
         }
       }
     }
-    return sortedArrToIndexSet(intersected ?? []);
+    if (intersected === null) {
+      return LenIndexSet(this.data.length);
+    }
+    return sortedArrToIndexSet(intersected);
   }
 
   query(q: Partial<R>, filter?: (r: R) => boolean): R[] {

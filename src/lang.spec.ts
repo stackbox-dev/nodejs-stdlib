@@ -1190,4 +1190,84 @@ describe("Lang.InvertedIndexMap", () => {
     expect(idx.count({ type: "A" })).toBe(1);
     expect(idx.count({ type: "B" })).toBe(3);
   });
+
+  test("query with undefined field values", () => {
+    interface Person {
+      id: string;
+      name: string;
+      age: number;
+      city: string;
+    }
+
+    const idx = new Lang.InvertedIndexMap<Person>(
+      (r) => r.id,
+      ["name", "age", "city"],
+    );
+
+    const people = [
+      { id: "p1", name: "Alice", age: 30, city: "New York" },
+      { id: "p2", name: "Bob", age: 25, city: "Boston" },
+      { id: "p3", name: "Charlie", age: 30, city: "Chicago" },
+      { id: "p4", name: "David", age: 35, city: "New York" },
+    ];
+
+    people.forEach((p) => idx.add(p));
+
+    // Undefined field values should be ignored
+    expect(idx.query({ name: "Alice", age: undefined })).toEqual([people[0]]);
+
+    expect(idx.query({ name: undefined, age: 30 })).toEqual([
+      people[0],
+      people[2],
+    ]);
+
+    // Multiple undefined fields
+    expect(
+      idx.query({
+        name: undefined,
+        age: undefined,
+        city: "New York",
+      }),
+    ).toEqual([people[0], people[3]]);
+
+    // All fields undefined should return all records
+    expect(
+      idx
+        .query({
+          name: undefined,
+          age: undefined,
+          city: undefined,
+        })
+        .sort((a, b) => a.id.localeCompare(b.id)),
+    ).toEqual(people);
+
+    // Mix of undefined and non-existent fields
+    expect(
+      idx.query({
+        name: undefined,
+        nonExistent: "value" as any,
+        city: "Boston",
+      } as any),
+    ).toEqual([people[1]]);
+
+    // Count should work same with undefined fields
+    expect(
+      idx.count({
+        name: undefined,
+        age: 30,
+        city: undefined,
+      }),
+    ).toBe(2);
+
+    // Filter function should still work with undefined query fields
+    expect(
+      idx.query(
+        {
+          name: undefined,
+          age: undefined,
+        },
+        (p) => p.city === "New York",
+      ),
+    ).toEqual([people[0], people[3]]);
+  });
 });
