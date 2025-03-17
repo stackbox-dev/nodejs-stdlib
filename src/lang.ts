@@ -818,4 +818,29 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
     }
     return output;
   }
+
+  count(q: Partial<R>, filter?: (r: R) => boolean): number {
+    const matched = this.queryIndexSet(q);
+    if (matched.size === 0) {
+      return 0;
+    }
+    if (matched.size === this.data.length) {
+      if (!filter) {
+        return this.data.length;
+      } else {
+        return countBy(this.data, filter);
+      }
+    }
+    if (!filter) {
+      return matched.size;
+    }
+    let count = 0;
+    for (const idx of matched) {
+      const row = this.data[idx];
+      if (filter(row)) {
+        count++;
+      }
+    }
+    return count;
+  }
 }

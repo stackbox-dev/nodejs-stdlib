@@ -1140,4 +1140,54 @@ describe("Lang.InvertedIndexMap", () => {
     );
     expect(noMatches).toEqual([]);
   });
+
+  test("count with filter function", () => {
+    interface Record {
+      id: string;
+      type: string;
+      status: string;
+      value: number;
+    }
+
+    const idx = new Lang.InvertedIndexMap<Record>(
+      (r) => r.id,
+      ["type", "status"],
+    );
+
+    // Add test records
+    const records = [
+      { id: "r1", type: "A", status: "active", value: 10 },
+      { id: "r2", type: "A", status: "inactive", value: 20 },
+      { id: "r3", type: "B", status: "active", value: 30 },
+      { id: "r4", type: "B", status: "active", value: 40 },
+      { id: "r5", type: "C", status: "inactive", value: 50 },
+    ];
+
+    records.forEach((r) => idx.add(r));
+
+    // Count with indexed field only
+    expect(idx.count({ type: "A" })).toBe(2);
+    expect(idx.count({ status: "active" })).toBe(3);
+
+    // Count with multiple indexed fields
+    expect(idx.count({ type: "B", status: "active" })).toBe(2);
+
+    // Count with filter on non-indexed field
+    expect(idx.count({}, (r) => r.value > 30)).toBe(2);
+
+    // Count with indexed field + filter
+    expect(idx.count({ status: "active" }, (r) => r.value > 30)).toBe(1);
+
+    // Count with no matches should return 0
+    expect(idx.count({ type: "D" })).toBe(0);
+    expect(idx.count({}, (r) => r.value > 100)).toBe(0);
+
+    // Count entire dataset with no query or filter
+    expect(idx.count({})).toBe(5);
+
+    // Update a record and verify count updates
+    idx.add({ id: "r1", type: "B", status: "active", value: 15 });
+    expect(idx.count({ type: "A" })).toBe(1);
+    expect(idx.count({ type: "B" })).toBe(3);
+  });
 });
