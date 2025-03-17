@@ -1138,7 +1138,6 @@ describe("Lang.InvertedIndexMap", () => {
       { category: "electronics" },
       (p) => p.stock > 10,
     );
-    console.log("h4");
     expect(noMatches).toEqual([]);
   });
 });
