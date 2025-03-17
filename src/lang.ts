@@ -796,18 +796,25 @@ export class InvertedIndexMap<R extends Record<keyof R, unknown>> {
     return sortedArrToIndexSet(intersected ?? []);
   }
 
-  query(q: Partial<R>): R[] {
+  query(q: Partial<R>, filter?: (r: R) => boolean): R[] {
     const matched = this.queryIndexSet(q);
     if (matched.size === 0) {
       return [];
     }
     if (matched.size === this.data.length) {
-      return this.data;
+      if (!filter) {
+        return this.data;
+      } else {
+        return this.data.filter(filter);
+      }
     }
-    const output: R[] = new Array(matched.size);
-    let i = 0;
+    const output: R[] = [];
     for (const idx of matched) {
-      output[i++] = this.data[idx];
+      const row = this.data[idx];
+      if (filter && !filter(row)) {
+        continue;
+      }
+      output.push(row);
     }
     return output;
   }

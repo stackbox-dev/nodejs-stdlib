@@ -1098,4 +1098,47 @@ describe("Lang.InvertedIndexMap", () => {
     expect(productsIndex.query({ price: 599 }).length).toBe(0);
     expect(productsIndex.query({ price: 499 }).length).toBe(1);
   });
+
+  test("query with filter function", () => {
+    interface Product {
+      id: string;
+      category: string;
+      price: number;
+      stock: number;
+    }
+
+    const idx = new Lang.InvertedIndexMap<Product>(
+      (r) => r.id,
+      ["category", "price"],
+    );
+
+    const products = [
+      { id: "p1", category: "electronics", price: 100, stock: 5 },
+      { id: "p2", category: "books", price: 20, stock: 10 },
+      { id: "p3", category: "electronics", price: 200, stock: 3 },
+      { id: "p4", category: "books", price: 15, stock: 8 },
+    ];
+
+    products.forEach((p) => idx.add(p));
+
+    // Query with filter on indexed field + unindexed field filter
+    const results = idx.query({ category: "electronics" }, (p) => p.stock > 4);
+    expect(results).toEqual([products[0]]); // Only p1 matches both criteria
+
+    // Filter with no indexed query should work on all records
+    const highStock = idx.query({}, (p) => p.stock > 8);
+    expect(highStock).toEqual([products[1]]); // p2 has stock of 10
+
+    // Filter should run after indexed field filtering
+    const filteredBooks = idx.query({ category: "books" }, (p) => p.price < 20);
+    expect(filteredBooks).toEqual([products[3]]); // Only p4 matches
+
+    // Empty result if filter excludes all indexed matches
+    const noMatches = idx.query(
+      { category: "electronics" },
+      (p) => p.stock > 10,
+    );
+    console.log("h4");
+    expect(noMatches).toEqual([]);
+  });
 });
