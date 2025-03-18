@@ -1,4 +1,4 @@
-import { encode, decode } from "./bigint";
+import { decode, encode } from "./bigint";
 
 test("encode", () => {
   expect(encode("0")).toBe(0n);

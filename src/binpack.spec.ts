@@ -1,4 +1,4 @@
-import { Size, Item, firstFitDecreasing } from "./binpack";
+import { Item, Size, firstFitDecreasing } from "./binpack";
 
 describe("firstFitDecreasing", () => {
   it("should pack items into bins correctly", () => {

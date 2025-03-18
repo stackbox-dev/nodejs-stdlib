@@ -1,12 +1,12 @@
 import {
-  convToRad,
-  convToDeg,
   R,
-  validate,
-  haversine,
   bearing,
-  normaliseDegs,
   bearingInDegs,
+  convToDeg,
+  convToRad,
+  haversine,
+  normaliseDegs,
+  validate,
 } from "./geo";
 
 describe("Geo functions", () => {

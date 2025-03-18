@@ -1,5 +1,5 @@
 import * as mnemonist from "mnemonist";
-import { HeapNode, DijkstraShortestPath } from "./dijkstra";
+import { DijkstraShortestPath, HeapNode } from "./dijkstra";
 
 export const createSPA = (edges: any[]) => {
   return new DijkstraShortestPath(

@@ -1,4 +1,4 @@
-import { Edge, TransitiveClosure, INF, add } from "./interfaces";
+import { Edge, INF, TransitiveClosure, add } from "./interfaces";
 import { getNodesFromEdges } from "./utils";
 
 export function buildDAGTransitiveClosure<T>(
