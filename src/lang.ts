@@ -232,22 +232,22 @@ export const maxBy = <T>(
 };
 
 export const sumBy = <T>(
-  items: ReadonlyArray<T>,
+  items: ReadonlyArray<T> | undefined,
   fn: (x: T) => number,
 ): number => {
   let s = 0;
-  for (const item of items) {
+  for (const item of items ?? []) {
     s += fn(item);
   }
   return s;
 };
 
 export const countBy = <T>(
-  items: ReadonlyArray<T>,
+  items: ReadonlyArray<T> | undefined,
   fn: (x: T) => boolean,
 ): number => {
   let s = 0;
-  for (const item of items) {
+  for (const item of items ?? []) {
     if (fn(item)) {
       s++;
     }
